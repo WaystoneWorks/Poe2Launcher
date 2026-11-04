@@ -16,6 +16,7 @@ use crate::{
     paths::reject_steam_paths,
     play,
     settings::Settings,
+    source::ReleaseSource,
     version::VersionFile,
 };
 
@@ -38,7 +39,10 @@ pub struct HookStatus {
     /// The game version the hook is matched against: the selected one, or for Official
     /// (read-only) the newest private version (the same DLL, in official mode).
     pub game_version: String,
-    pub repo: &'static str,
+    /// `owner/name` on GitHub, the folder name on a mirror.
+    pub repo: String,
+    /// Where the releases are read, in words ("github.com/owner/Poe2ClientHook").
+    pub source_label: String,
     pub source: DllSource,
     /// Where Play takes the DLLs from.
     pub dll_dir: PathBuf,
@@ -125,7 +129,8 @@ impl Core {
             .collect();
         Ok(HookStatus {
             game_version: game,
-            repo: hook::REPO,
+            repo: self.release_source().repo_path(hook::REPO),
+            source_label: self.release_source().describe(hook::REPO),
             source,
             dll_dir,
             manual_dir: s.dll_dir.filter(|p| !p.as_os_str().is_empty()),
@@ -173,11 +178,12 @@ impl Core {
     /// The newest hook release for the selected game version, and whether it is newer than the
     /// downloaded one.
     pub async fn hook_check(&self) -> Result<HookCheck> {
-        self.hook_check_at(host::API_BASE).await
+        self.hook_check_at(self.release_source()).await
     }
 
-    pub async fn hook_check_at(&self, api_base: &str) -> Result<HookCheck> {
-        let releases = hook::fetch_releases(api_base).await?;
+    pub async fn hook_check_at(&self, src: impl Into<ReleaseSource>) -> Result<HookCheck> {
+        let src = src.into();
+        let releases = hook::fetch_releases(&src).await?;
         let release = hook::pick_release(&releases, &self.hook_game_version())?;
         let status = self.hook_status()?;
         let update_available = match status.installed {
@@ -198,11 +204,14 @@ impl Core {
 
     /// Finds, downloads, verifies and installs the newest hook for the selected game version.
     pub async fn hook_install_latest(&self) -> Result<HookOutcome> {
-        self.hook_install_latest_from(host::API_BASE).await
+        self.hook_install_latest_from(self.release_source()).await
     }
 
-    pub async fn hook_install_latest_from(&self, api_base: &str) -> Result<HookOutcome> {
-        let check = self.hook_check_at(api_base).await?;
+    pub async fn hook_install_latest_from(
+        &self,
+        src: impl Into<ReleaseSource>,
+    ) -> Result<HookOutcome> {
+        let check = self.hook_check_at(src).await?;
         let release = check.release;
         let _busy = self.hook_begin()?;
         if !check.update_available

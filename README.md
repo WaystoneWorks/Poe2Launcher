@@ -6,7 +6,7 @@ The launcher has no login of its own and creates no accounts. Accounts belong to
 
 Tauri 2 (Rust backend in `src-tauri/`) with a Svelte 5 + Vite + TypeScript UI (`src/`), game-styled dark theme (light parchment in Settings) from `src/tokens.css` and `src/lib/motion.ts` (identical copies in the web admin), fades and slides that follow `prefers-reduced-motion`. UI preview without the backend: `npm run dev`, then `http://localhost:1420/?mock` (`&versions`, `&official`, `&empty`, `&fresh`, `&mods`, `&modsync[=off|auto]`, `&theme=light`, `&installing`, `&paused`, `&lowspace`, `&offline`, `&nonews`, `&motd`, `&nolist`, `&nobackups`, `&nologs`; the mock is `src/lib/mock.ts`, not in release builds).
 
-The user guide (set-up, first run, hosting, server updates, client hook, releasing, troubleshooting) is [docs/guides/launcher.md](https://github.com/WaystoneWorks/Poe2ModdingProject/blob/main/docs/guides/launcher.md); this file is the developer's view.
+Release source: GitHub owner or static mirror (`src-tauri/src/source.rs`, Settings > Advanced); `cargo xtask release-mirror` of the hub builds a mirror. The user guide (set-up, first run, hosting, server updates, client hook, releasing, troubleshooting) is [docs/guides/launcher.md](https://github.com/WaystoneWorks/Poe2ModdingProject/blob/main/docs/guides/launcher.md); this file is the developer's view.
 
 ## Pages
 

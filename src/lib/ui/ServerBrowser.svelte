@@ -139,7 +139,7 @@
     <div class="loading-row"><Spinner size={18} /> Loading the list...</div>
   {:else if servers.length === 0}
     <Empty icon="compass" title="No public servers listed yet">
-      Public servers are added to the list by pull request to <b>WaystoneWorks/Poe2ServerList</b> on GitHub. Until then, add a friend's server by address under <a href="#/servers">My servers</a>, or <a href="#/servers?host=1">create your own</a>.
+      Public servers are added to the list by pull request to <b>{app.info?.server_list_label ?? 'the server list repository'}</b>. Until then, add a friend's server by address under <a href="#/servers">My servers</a>, or <a href="#/servers?host=1">create your own</a>.
     </Empty>
   {:else if shown.length === 0}
     <Empty icon="search" title="No server matches">

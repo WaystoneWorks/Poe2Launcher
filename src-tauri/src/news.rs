@@ -22,11 +22,9 @@ use serde::{Deserialize, Serialize};
 use crate::{
     core::{Core, now_secs},
     paths::write_atomic,
+    source::ReleaseSource,
 };
 
-pub const NEWS_URL: &str =
-    "https://raw.githubusercontent.com/WaystoneWorks/Poe2ModdingProject/main/news.json";
-pub const API_BASE: &str = "https://api.github.com";
 /// A fresh cache is used as it is for this long (seconds).
 pub const CACHE_TTL: i64 = 30 * 60;
 /// After a forced refresh, another one is ignored for this long.
@@ -65,19 +63,19 @@ pub struct RepoSource {
 
 pub const REPOS: [RepoSource; 3] = [
     RepoSource {
-        repo: "WaystoneWorks/Poe2Launcher",
+        repo: crate::source::LAUNCHER_REPO,
         prefix: "v",
         source: "launcher",
         label: "Launcher",
     },
     RepoSource {
-        repo: "WaystoneWorks/Poe2Server",
+        repo: crate::source::SERVER_REPO,
         prefix: "server-v",
         source: "server",
         label: "Server",
     },
     RepoSource {
-        repo: "WaystoneWorks/Poe2ClientHook",
+        repo: crate::source::HOOK_REPO,
         prefix: "hook-v",
         source: "hook",
         label: "Client hook",
@@ -87,16 +85,14 @@ pub const REPOS: [RepoSource; 3] = [
 /// Where the news come from (parameters for tests).
 #[derive(Debug, Clone)]
 pub struct NewsSources {
-    pub api_base: String,
+    pub source: ReleaseSource,
     pub news_url: String,
 }
 
-impl Default for NewsSources {
-    fn default() -> Self {
-        Self {
-            api_base: API_BASE.into(),
-            news_url: NEWS_URL.into(),
-        }
+impl NewsSources {
+    pub fn from_source(source: ReleaseSource) -> Self {
+        let news_url = source.news_url();
+        Self { source, news_url }
     }
 }
 
@@ -306,39 +302,20 @@ fn client() -> Result<reqwest::Client> {
 }
 
 async fn get_text(c: &reqwest::Client, url: &str, accept: &str, max: usize) -> Result<String> {
-    let res = c
-        .get(url)
-        .header("Accept", accept)
-        .send()
+    crate::source::fetch_text(c, url, accept, max)
         .await
-        .map_err(|e| anyhow!("cannot reach {}", e.without_url()))?;
-    let status = res.status();
-    if !status.is_success() {
-        match status.as_u16() {
-            403 | 429 => bail!("rate limited (HTTP {})", status.as_u16()),
-            code => bail!("HTTP {code}"),
-        }
-    }
-    if res.content_length().is_some_and(|l| l as usize > max) {
-        bail!("the answer is larger than {} KB", max / 1024);
-    }
-    let bytes = res.bytes().await?;
-    if bytes.len() > max {
-        bail!("the answer is larger than {} KB", max / 1024);
-    }
-    Ok(String::from_utf8_lossy(&bytes).into_owned())
+        .map_err(|e| match e {
+            crate::source::FetchError::Status(403 | 429) => anyhow!("rate limited"),
+            e => anyhow!("{e}"),
+        })
 }
 
 async fn fetch_repo(
     c: &reqwest::Client,
-    api_base: &str,
+    source: &ReleaseSource,
     src: &RepoSource,
 ) -> Result<Vec<NewsItem>> {
-    let url = format!(
-        "{}/repos/{}/releases?per_page=20",
-        api_base.trim_end_matches('/'),
-        src.repo
-    );
+    let url = source.releases_url(src.repo, 20);
     let text = get_text(c, &url, "application/vnd.github+json", 2 << 20).await?;
     let releases: Vec<GhRelease> = serde_json::from_str(&text).context("not a release list")?;
     Ok(releases_to_items(src, releases))
@@ -351,9 +328,9 @@ pub async fn fetch_all(s: &NewsSources) -> (Vec<NewsItem>, Vec<&'static str>) {
         return (Vec::new(), vec!["launcher", "server", "hook", "project"]);
     };
     let (a, b, h, n) = tokio::join!(
-        fetch_repo(&c, &s.api_base, &REPOS[0]),
-        fetch_repo(&c, &s.api_base, &REPOS[1]),
-        fetch_repo(&c, &s.api_base, &REPOS[2]),
+        fetch_repo(&c, &s.source, &REPOS[0]),
+        fetch_repo(&c, &s.source, &REPOS[1]),
+        fetch_repo(&c, &s.source, &REPOS[2]),
         async {
             let t = get_text(&c, &s.news_url, "application/json", MAX_NEWS_FILE).await?;
             parse_news_json(&t).map(|(items, _)| items)
@@ -423,7 +400,8 @@ impl Core {
     /// The news for Home. A fresh cache is returned as it is; otherwise the sources are asked
     /// (`force`: the user pressed refresh, but not more than once a minute). Never an error.
     pub async fn news_get(&self, force: bool) -> NewsFeed {
-        self.news_get_from(&NewsSources::default(), force).await
+        self.news_get_from(&NewsSources::from_source(self.release_source()), force)
+            .await
     }
 
     pub async fn news_get_from(&self, sources: &NewsSources, force: bool) -> NewsFeed {

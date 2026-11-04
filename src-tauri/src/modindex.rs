@@ -23,10 +23,9 @@ use crate::{
     modsync::{AdvertisedMod, MAX_PACKAGE_BYTES, ModSource},
     news::{load_cache_as, save_cache_as, truncate},
     profiles::is_loopback_host,
+    source::FetchError,
 };
 
-pub const INDEX_URL: &str =
-    "https://raw.githubusercontent.com/WaystoneWorks/Poe2Mods/main/index.json";
 pub const CACHE_TTL: i64 = 10 * 60;
 pub const FORCE_GAP: i64 = 20;
 /// The index file schema this launcher reads.
@@ -343,27 +342,21 @@ async fn fetch_index(url: &str, allow_local: bool) -> Result<(String, Vec<IndexM
         .timeout(Duration::from_secs(15))
         .user_agent(concat!("poe2-launcher/", env!("CARGO_PKG_VERSION")))
         .build()?;
-    let res = c
-        .get(url)
-        .header("Accept", "application/json")
-        .send()
+    let text = crate::source::fetch_text(&c, url, "application/json", MAX_FILE)
         .await
-        .map_err(|e| anyhow!("cannot reach the mod index: {}", e.without_url()))?;
-    let status = res.status();
-    match status.as_u16() {
-        200..=299 => {}
-        404 => bail!("the mod index does not exist yet (HTTP 404)"),
-        403 | 429 => bail!(
-            "the mod index is rate limited (HTTP {}); try again later",
-            status.as_u16()
-        ),
-        code => bail!("the mod index answered HTTP {code}"),
-    }
-    let bytes = res.bytes().await?;
-    if bytes.len() > MAX_FILE {
-        bail!("index.json is larger than {} KB", MAX_FILE / 1024);
-    }
-    parse_index_with(&String::from_utf8_lossy(&bytes), allow_local)
+        .map_err(|e| match e {
+            FetchError::Unreachable(e) => anyhow!("cannot reach the mod index: {e}"),
+            FetchError::Status(404) => anyhow!("the mod index does not exist yet (HTTP 404)"),
+            FetchError::Status(c @ (403 | 429)) => {
+                anyhow!("the mod index is rate limited (HTTP {c}); try again later")
+            }
+            FetchError::Status(c) => anyhow!("the mod index answered HTTP {c}"),
+            FetchError::TooLarge(_) => {
+                anyhow!("index.json is larger than {} KB", MAX_FILE / 1024)
+            }
+            FetchError::Other(e) => anyhow!("the mod index could not be read: {e}"),
+        })?;
+    parse_index_with(&text, allow_local)
 }
 
 impl Core {
@@ -406,7 +399,8 @@ impl Core {
     /// The mod index (cached; `force`: the player pressed refresh). Never an error: an
     /// unreachable index gives the saved copy and a note.
     pub async fn mod_index_get(&self, force: bool) -> ModIndexView {
-        self.mod_index_get_from(INDEX_URL, force, false).await
+        self.mod_index_get_from(&self.release_source().index_url(), force, false)
+            .await
     }
 
     /// `url` and `allow_local` are parameters for tests (a mock index names packages on 127.0.0.1).

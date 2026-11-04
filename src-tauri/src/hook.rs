@@ -25,11 +25,13 @@ use serde::{Deserialize, Serialize};
 use crate::{
     host::{GhRelease, extract_archive, find_package_root, http_client},
     paths::{Dirs, reject_steam_paths},
+    source::{self, FetchError, ReleaseSource},
     verify::sha256_file,
 };
 
-/// GitHub repository whose releases (tag `hook-v*`) carry the hook packages.
-pub const REPO: &str = "WaystoneWorks/Poe2ClientHook";
+/// Repository (under the release source's owner) whose releases (tag `hook-v*`) carry the hook
+/// packages.
+pub const REPO: &str = crate::source::HOOK_REPO;
 pub const TAG_PREFIX: &str = "hook-v";
 const ASSET_PREFIX: &str = "poe-hook-v";
 /// Files a usable package must list: what the deploy copies.
@@ -169,41 +171,35 @@ pub fn pick_release(releases: &[GhRelease], game_version: &str) -> Result<HookRe
     )
 }
 
-/// Lists the GitHub releases of [`REPO`]. `api_base` is a parameter for tests.
-pub async fn fetch_releases(api_base: &str) -> Result<Vec<GhRelease>> {
-    let url = format!(
-        "{}/repos/{REPO}/releases?per_page=30",
-        api_base.trim_end_matches('/')
-    );
-    let res = http_client()?
-        .get(&url)
-        .header("Accept", "application/vnd.github+json")
-        .send()
-        .await
-        .map_err(|e| {
-            anyhow!(
-                "cannot reach GitHub to look for client hook releases: {}",
-                e.without_url()
-            )
-        })?;
-    let status = res.status();
-    if status.is_success() {
-        return res
-            .json::<Vec<GhRelease>>()
-            .await
-            .context("GitHub's release list is not what was expected");
-    }
-    match status.as_u16() {
-        404 => bail!(
-            "no client hook releases can be read from github.com/{REPO}: the repository has no \
-             releases yet or is not public (GitHub answers 404 for both)"
+/// Lists the releases of [`REPO`] from the release source.
+pub async fn fetch_releases(src: &ReleaseSource) -> Result<Vec<GhRelease>> {
+    let host = src.host_label();
+    let text = source::fetch_text(
+        &http_client()?,
+        &src.releases_url(REPO, 30),
+        "application/vnd.github+json",
+        8 << 20,
+    )
+    .await
+    .map_err(|e| match e {
+        FetchError::Unreachable(e) => {
+            anyhow!("cannot reach {host} to look for client hook releases: {e}")
+        }
+        FetchError::Status(404) => anyhow!(
+            "no client hook releases can be read from {}: there are no releases yet or the \
+             repository is not public (GitHub answers 404 for both)",
+            src.describe(REPO)
         ),
-        403 | 429 => bail!(
-            "GitHub refused the request (HTTP {}), probably a rate limit; try again in a few minutes",
-            status.as_u16()
+        FetchError::Status(403 | 429) => anyhow!(
+            "{host} refused the request (HTTP 403/429), probably a rate limit; try again in a few minutes"
         ),
-        code => bail!("GitHub answered HTTP {code} when listing the client hook releases"),
-    }
+        FetchError::Status(code) => {
+            anyhow!("{host} answered HTTP {code} when listing the client hook releases")
+        }
+        e => anyhow!("the client hook release list could not be read: {e}"),
+    })?;
+    serde_json::from_str::<Vec<GhRelease>>(&text)
+        .with_context(|| format!("{host}'s release list is not what was expected"))
 }
 
 // ---------------------------------------------------------------------------------------------

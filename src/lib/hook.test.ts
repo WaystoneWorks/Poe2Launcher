@@ -6,7 +6,7 @@ const installed: InstalledHook = { dir: '/h/0.2.0', name: 'n', version: '0.2.0',
 
 function status(over: Partial<HookStatus> = {}): HookStatus {
   return {
-    game_version: '0.5.5e.hotfix1', repo: 'x/y', source: { kind: 'missing' }, dll_dir: '/d', manual_dir: null,
+    game_version: '0.5.5e.hotfix1', repo: 'x/y', source_label: 'github.com/x/y', source: { kind: 'missing' }, dll_dir: '/d', manual_dir: null,
     installed: null, other_installed: [], busy: false, ...over,
   };
 }

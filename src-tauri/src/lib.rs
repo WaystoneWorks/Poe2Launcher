@@ -29,8 +29,11 @@ pub mod play;
 pub mod profiles;
 pub mod serverlist;
 pub mod settings;
+pub mod source;
 pub mod space;
 pub mod steam;
+#[cfg(desktop)]
+pub mod updater;
 pub mod verify;
 pub mod version;
 
@@ -125,6 +128,7 @@ pub fn run() {
     #[cfg(desktop)]
     let builder = builder
         .plugin(tauri_plugin_updater::Builder::new().build())
+        .manage(updater::PendingUpdate::default())
         .plugin(tauri_plugin_process::init());
     builder
         .setup(|app| {
@@ -232,6 +236,10 @@ pub fn run() {
             commands::play,
             commands::play_state,
             commands::app_info,
+            #[cfg(desktop)]
+            updater::update_check,
+            #[cfg(desktop)]
+            updater::update_install,
         ])
         .build(tauri::generate_context!())
         .expect("error while building the launcher")

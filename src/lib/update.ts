@@ -1,4 +1,4 @@
-// Launcher self-update (Tauri updater plugin: the GitHub release's latest.json, signed).
+// Launcher self-update (Tauri updater plugin through backend commands: `latest.json` of the release source, signed).
 // The logic is here and takes the plugin as a parameter, so it is testable without Tauri.
 
 export interface UpdateHandle {

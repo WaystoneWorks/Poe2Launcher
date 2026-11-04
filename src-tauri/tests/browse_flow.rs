@@ -84,7 +84,7 @@ async fn mock_news() -> (NewsSources, Arc<GhState>) {
                         "Poe2ClientHook" => vec![release("hook-v0.2.0", "2026-10-19T10:00:00Z", "hook notes")],
                         _ => vec![],
                     };
-                    assert_eq!(o, "WaystoneWorks");
+                    assert_eq!(o, poe2_launcher_lib::default_owner!());
                     Json(Value::Array(list)).into_response()
                 },
             ),
@@ -102,7 +102,7 @@ async fn mock_news() -> (NewsSources, Arc<GhState>) {
     let base = serve(app).await;
     (
         NewsSources {
-            api_base: base.clone(),
+            source: base.as_str().into(),
             news_url: format!("{base}/news.json"),
         },
         st,
@@ -167,7 +167,7 @@ async fn offline_and_rate_limited_news_fall_back_to_the_saved_copy() {
     // Nothing reachable at all: the saved copy, flagged offline, no error.
     age(1);
     let dead = NewsSources {
-        api_base: "http://127.0.0.1:9".into(),
+        source: "http://127.0.0.1:9".into(),
         news_url: "http://127.0.0.1:9/news.json".into(),
     };
     let feed = e.core.news_get_from(&dead, false).await;
@@ -499,4 +499,82 @@ fn backups_through_the_core() {
         1,
         "the manual one stays"
     );
+}
+
+#[tokio::test]
+async fn news_mod_index_and_server_list_follow_a_file_mirror() {
+    use poe2_launcher_lib::source::{ReleaseSource, SourceKind};
+    let e = env();
+    let dir = e.tmp.path().join("mirror");
+    for repo in [
+        "Poe2Launcher",
+        "Poe2Server",
+        "Poe2ClientHook",
+        "Poe2Mods",
+        "Poe2ServerList",
+        "Poe2ModdingProject",
+    ] {
+        std::fs::create_dir_all(dir.join(repo)).unwrap();
+    }
+    let w = |p: &str, v: Value| std::fs::write(dir.join(p), v.to_string()).unwrap();
+    w(
+        "Poe2Launcher/releases.json",
+        json!([release("v0.9.0", "2026-10-20T10:00:00Z", "- mirrored")]),
+    );
+    w("Poe2Server/releases.json", json!([]));
+    w("Poe2ClientHook/releases.json", json!([]));
+    w(
+        "Poe2ModdingProject/news.json",
+        json!({"version": 1, "items": [
+            {"id": "mirror", "date": "2026-10-22", "title": "From the mirror", "body": "Hi"}]}),
+    );
+    w(
+        "Poe2ServerList/servers.json",
+        json!({"schema": 1, "servers": [entry("mirrored", "https://play.example.org:8443")]}),
+    );
+    w(
+        "Poe2Mods/index.json",
+        json!({"schema": 1, "updated": "2026-10-22T00:00:00Z", "mods": []}),
+    );
+
+    let mut s = e.core.settings().unwrap();
+    s.release_source = ReleaseSource {
+        kind: SourceKind::Static,
+        base: reqwest::Url::from_file_path(&dir)
+            .unwrap()
+            .to_string()
+            .trim_end_matches('/')
+            .to_owned(),
+        ..Default::default()
+    };
+    e.core.set_settings(s).unwrap();
+
+    let feed = e.core.news_get(true).await;
+    assert!(!feed.offline);
+    let titles: Vec<&str> = feed.items.iter().map(|i| i.title.as_str()).collect();
+    assert!(titles.contains(&"From the mirror"), "{titles:?}");
+    assert!(feed.items.iter().any(|i| i.source == "launcher"));
+
+    let list = e.core.server_list_get(true).await;
+    assert!(!list.offline, "{}", list.error);
+    assert_eq!(list.servers.len(), 1);
+    assert_eq!(list.servers[0].id, "mirrored");
+
+    let idx = e.core.mod_index_get(true).await;
+    assert!(!idx.offline, "{}", idx.error);
+    assert!(idx.mods.is_empty());
+}
+
+#[tokio::test]
+async fn a_bad_release_source_is_refused_when_saved() {
+    use poe2_launcher_lib::source::{ReleaseSource, SourceKind};
+    let e = env();
+    let mut s = e.core.settings().unwrap();
+    s.release_source = ReleaseSource {
+        kind: SourceKind::Static,
+        base: "ftp://nope".into(),
+        ..Default::default()
+    };
+    assert!(e.core.set_settings(s).is_err());
+    assert!(e.core.settings().unwrap().release_source.is_default());
 }

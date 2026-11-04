@@ -35,6 +35,7 @@ use crate::{
     host::{self, HostSettings, PackageInfo, ServerRelease, local_web_url},
     host_ops::PreviousConfig,
     host_run::RunState,
+    source::ReleaseSource,
 };
 
 /// Knobs that tests turn down.
@@ -84,13 +85,17 @@ pub struct UpdateOutcome {
 
 impl Core {
     pub async fn host_update_check(&self, id: &str) -> ServerUpdateCheck {
-        self.host_update_check_at(id, host::API_BASE).await
+        self.host_update_check_at(id, self.release_source()).await
     }
 
     /// Asks GitHub whether a newer server release than the installed one exists. Never an
     /// error: a failure is in the `error` field. With no usable package there is nothing to
     /// update and GitHub is not asked.
-    pub async fn host_update_check_at(&self, id: &str, api_base: &str) -> ServerUpdateCheck {
+    pub async fn host_update_check_at(
+        &self,
+        id: &str,
+        src: impl Into<ReleaseSource>,
+    ) -> ServerUpdateCheck {
         let mut out = ServerUpdateCheck {
             installed: None,
             release: None,
@@ -108,7 +113,7 @@ impl Core {
             return out;
         };
         out.installed = Some(current.server_version.clone());
-        match self.host_find_release_at(api_base).await {
+        match self.host_find_release_at(src).await {
             Ok(r) => {
                 out.update_available = host::is_newer(&current.server_version, &r.version);
                 out.release = Some(r);
@@ -119,7 +124,7 @@ impl Core {
     }
 
     pub async fn host_update_apply(&self, id: &str) -> Result<UpdateOutcome> {
-        self.host_update_apply_with(id, host::API_BASE, &UpdateTuning::default())
+        self.host_update_apply_with(id, self.release_source(), &UpdateTuning::default())
             .await
     }
 
@@ -127,7 +132,7 @@ impl Core {
     pub async fn host_update_apply_with(
         &self,
         id: &str,
-        api_base: &str,
+        src: impl Into<ReleaseSource>,
         tuning: &UpdateTuning,
     ) -> Result<UpdateOutcome> {
         self.host_private_only()?;
@@ -135,7 +140,7 @@ impl Core {
         let current = self
             .host_package(&settings)
             .context("there is no server to update: download or pick a package first")?;
-        let release = self.host_find_release_at(api_base).await?;
+        let release = self.host_find_release_at(src).await?;
         if !host::is_newer(&current.server_version, &release.version) {
             return Ok(UpdateOutcome {
                 updated: false,

@@ -33,8 +33,8 @@ use crate::{
     verify::VerifyReport,
 };
 
-type App<'a> = State<'a, Arc<Core>>;
-type Res<T> = Result<T, String>;
+pub(crate) type App<'a> = State<'a, Arc<Core>>;
+pub(crate) type Res<T> = Result<T, String>;
 
 fn err(e: anyhow::Error) -> String {
     format!("{e:#}")
@@ -50,6 +50,10 @@ pub struct AppInfo {
     pub os: &'static str,
     pub data_dir: String,
     pub config_dir: String,
+    /// "GitHub" or "the release mirror": where releases, the mod index and the server list come from.
+    pub source_host: &'static str,
+    /// Where the public server list is maintained, in words.
+    pub server_list_label: String,
 }
 
 #[tauri::command]
@@ -61,6 +65,8 @@ pub fn app_info(app: App<'_>) -> AppInfo {
         os: std::env::consts::OS,
         data_dir: app.dirs.data.display().to_string(),
         config_dir: app.dirs.config.display().to_string(),
+        source_host: app.release_source().host_label(),
+        server_list_label: app.release_source().server_list_label(),
     }
 }
 
@@ -475,9 +481,9 @@ pub async fn host_update_apply(app: App<'_>, id: String) -> Res<UpdateOutcome> {
 
 /// Opens the hosting guide (a fixed address) in the system browser.
 #[tauri::command]
-pub fn host_open_guide(handle: tauri::AppHandle) -> Res<()> {
+pub fn host_open_guide(app: App<'_>, handle: tauri::AppHandle) -> Res<()> {
     TauriOpener(handle)
-        .open(crate::host::HOSTING_GUIDE_URL)
+        .open(&app.release_source().hosting_guide_url())
         .map_err(err)
 }
 

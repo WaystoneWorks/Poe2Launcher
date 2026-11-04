@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- **Release source.** Settings > Advanced > Release source: GitHub (an owner) or a static mirror (a folder or web server with `<repo>/releases.json`), used for server and client hook releases, news, the mod index, the server list, the hosting guide link and launcher updates. `cargo xtask release-mirror` of the hub builds such a folder from local checkouts. The launcher update check now runs in the backend (the update endpoint follows the source).
+
 ## 0.7.0
 
 - **No launcher login.** Each server has its own accounts, so the launcher no longer signs in: pick a server and press Play, and sign in on the game's own login screen with an account of that server (the game's Remember Me keeps it). The login form, the plain-http confirmation and the admin badge are gone from the Servers page; a server's row offers **Web admin** (the server's web admin in the browser, with its own login) and **Create account** (its register page, when registration is open).

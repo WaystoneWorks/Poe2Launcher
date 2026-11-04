@@ -219,6 +219,14 @@ impl Core {
         Settings::load(&self.dirs.settings_file())
     }
 
+    /// Where releases, the mod index, the server list and launcher updates are read. An
+    /// unreadable settings file gives the default (the settings page shows the error itself).
+    pub fn release_source(&self) -> crate::source::ReleaseSource {
+        self.settings()
+            .map(|s| s.release_source)
+            .unwrap_or_default()
+    }
+
     pub fn set_settings(&self, s: Settings) -> Result<Settings> {
         let s = s.normalized();
         s.validate()?;

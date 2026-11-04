@@ -67,7 +67,7 @@
       <div class="post"><div class="skeleton w40"></div><div class="skeleton h20 w70"></div><div class="skeleton"></div><div class="skeleton w60"></div></div>
     {/each}
   {:else if shown.length === 0}
-    <div class="post"><p class="muted">{app.news?.offline ? 'No news yet, and GitHub could not be reached. The news appear when you are online.' : 'No news here yet.'}</p></div>
+    <div class="post"><p class="muted">{app.news?.offline ? `No news yet, and ${app.info?.source_host ?? 'GitHub'} could not be reached. The news appear when you are online.` : 'No news here yet.'}</p></div>
   {:else}
     {#each shown as n (n.id)}
       {@const open = expanded[n.id] ?? false}
@@ -87,7 +87,7 @@
             </button>
           {/if}
           {#if n.link}
-            <button type="button" class="link quiet" onclick={() => link(n.link!)}>Open on GitHub <Icon name="external" size={12} /></button>
+            <button type="button" class="link quiet" onclick={() => link(n.link!)}>Open the link <Icon name="external" size={12} /></button>
           {/if}
         </div>
       </article>

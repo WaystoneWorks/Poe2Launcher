@@ -19,10 +19,9 @@ use crate::{
     core::{Core, now_secs},
     news::{load_cache_as, save_cache_as, truncate},
     profiles::{is_private_host, normalize_base_url, plain_http, url_host},
+    source::FetchError,
 };
 
-pub const LIST_URL: &str =
-    "https://raw.githubusercontent.com/WaystoneWorks/Poe2ServerList/main/servers.json";
 pub const CACHE_TTL: i64 = 10 * 60;
 pub const FORCE_GAP: i64 = 20;
 const MAX_FILE: usize = 1 << 20;
@@ -293,27 +292,21 @@ async fn fetch_list(url: &str, allow_local: bool) -> Result<(Vec<ListedServer>, 
         .timeout(Duration::from_secs(12))
         .user_agent(concat!("poe2-launcher/", env!("CARGO_PKG_VERSION")))
         .build()?;
-    let res = c
-        .get(url)
-        .header("Accept", "application/json")
-        .send()
+    let text = crate::source::fetch_text(&c, url, "application/json", MAX_FILE)
         .await
-        .map_err(|e| anyhow!("cannot reach the server list: {}", e.without_url()))?;
-    let status = res.status();
-    match status.as_u16() {
-        200..=299 => {}
-        404 => bail!("the server list does not exist yet (HTTP 404)"),
-        403 | 429 => bail!(
-            "the server list is rate limited (HTTP {}); try again later",
-            status.as_u16()
-        ),
-        code => bail!("the server list answered HTTP {code}"),
-    }
-    let bytes = res.bytes().await?;
-    if bytes.len() > MAX_FILE {
-        bail!("servers.json is larger than {} KB", MAX_FILE / 1024);
-    }
-    parse_list_with(&String::from_utf8_lossy(&bytes), allow_local)
+        .map_err(|e| match e {
+            FetchError::Unreachable(e) => anyhow!("cannot reach the server list: {e}"),
+            FetchError::Status(404) => anyhow!("the server list does not exist yet (HTTP 404)"),
+            FetchError::Status(c @ (403 | 429)) => {
+                anyhow!("the server list is rate limited (HTTP {c}); try again later")
+            }
+            FetchError::Status(c) => anyhow!("the server list answered HTTP {c}"),
+            FetchError::TooLarge(_) => {
+                anyhow!("servers.json is larger than {} KB", MAX_FILE / 1024)
+            }
+            FetchError::Other(e) => anyhow!("the server list could not be read: {e}"),
+        })?;
+    parse_list_with(&text, allow_local)
 }
 
 /// Asks one server (`GET /api/v1/server`) with short timeouts.
@@ -354,7 +347,8 @@ impl Core {
     /// The public server list (cached; `force`: the user pressed refresh). Never an error: an
     /// unreachable list gives the saved copy and a note.
     pub async fn server_list_get(&self, force: bool) -> ServerList {
-        self.server_list_get_from(LIST_URL, force, false).await
+        self.server_list_get_from(&self.release_source().server_list_url(), force, false)
+            .await
     }
 
     /// `url` and `allow_local` are parameters for tests (a mock list names servers on 127.0.0.1).

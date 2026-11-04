@@ -16,7 +16,7 @@
   import Spinner from '../lib/ui/Spinner.svelte';
   import About from './About.svelte';
   import { formatBytes } from '../lib/format';
-  import type { CacheStatus, DesktopEntry, Settings, SteamLogin, SyncModeName } from '../lib/types';
+  import type { CacheStatus, DesktopEntry, ReleaseSource, Settings, SteamLogin, SyncModeName } from '../lib/types';
 
   // One tab per topic, one spaced column each. Every change saves on its own: switches and
   // choices at once, text fields when you leave them.
@@ -55,10 +55,21 @@
     if (s) {
       draft = { ...s, install_dirs: { ...s.install_dirs } };
       if ('install_dirs' in patch || 'dll_dir' in patch) await Promise.all([app.refreshStatus(), app.refreshInfo()]);
+      else if ('release_source' in patch) await app.refreshInfo();
     } else if (app.settings) {
       // Refused (e.g. a Steam folder): back to what is saved.
       draft = { ...app.settings, install_dirs: { ...app.settings.install_dirs } };
     }
+  }
+
+  const DEFAULT_SOURCE: ReleaseSource = { kind: 'github', api: 'https://api.github.com', owner: 'WaystoneWorks', base: '' };
+  const sourceIsDefault = $derived(JSON.stringify(app.settings?.release_source) === JSON.stringify(DEFAULT_SOURCE));
+  /** Saves the release source fields (the backend checks the addresses and refuses a bad one). */
+  function saveSource(patch: Partial<ReleaseSource>) {
+    if (!app.settings || !draft) return Promise.resolve();
+    const next = { ...draft.release_source, ...patch };
+    draft.release_source = next;
+    return commit({ release_source: next });
   }
 
   let cache = $state<CacheStatus | null>(null);
@@ -249,6 +260,36 @@
     {/if}
 
     {#if tab === 'advanced'}
+      <section class="card">
+        <div class="card-head"><span class="head-icon"><Icon name="download" size={16} /></span><h2>Release source</h2>
+          <span class="grow"></span>
+          {#if !sourceIsDefault}<Chip tone="warn" icon="alert">custom</Chip>{/if}
+        </div>
+        <p class="hint">Where the launcher looks for server and client hook releases, news, the mod index, the public server list and launcher updates. GitHub (an owner) is the default; a static mirror is a web server or folder made by <code>cargo xtask release-mirror</code>.</p>
+        <div class="pills" role="radiogroup" aria-label="Release source">
+          <button type="button" class:on={draft.release_source.kind === 'github'} role="radio" aria-checked={draft.release_source.kind === 'github'} onclick={() => saveSource({ kind: 'github' })}>GitHub</button>
+          <button type="button" class:on={draft.release_source.kind === 'static'} role="radio" aria-checked={draft.release_source.kind === 'static'} onclick={() => saveSource({ kind: 'static' })}>Static mirror</button>
+        </div>
+        {#if draft.release_source.kind === 'github'}
+          <div class="field">
+            <span>GitHub owner (account or organisation)</span>
+            <input bind:value={draft.release_source.owner} onchange={() => saveSource({})} />
+          </div>
+          <div class="field">
+            <span>GitHub API address</span>
+            <input bind:value={draft.release_source.api} onchange={() => saveSource({})} />
+          </div>
+        {:else}
+          <div class="field">
+            <span>Mirror address</span>
+            <input bind:value={draft.release_source.base} placeholder="https://host/path  or  file:///home/you/mirror" onchange={() => saveSource({})} />
+            <span class="hint">The folder holds one folder per repository (<code>Poe2Server/releases.json</code>, <code>Poe2Mods/index.json</code>, <code>Poe2Launcher/latest.json</code>...). Launcher updates need an <b>https</b> address; the other lookups also work from a <code>file:///</code> folder or plain <code>http</code>.</span>
+          </div>
+        {/if}
+        <div class="actions start">
+          <button type="button" class="btn" disabled={sourceIsDefault} onclick={() => saveSource({ ...DEFAULT_SOURCE })}>Reset to default</button>
+        </div>
+      </section>
       <section class="card">
         <div class="card-head"><span class="head-icon"><Icon name="box" size={16} /></span><h2>Hook DLL directory</h2></div>
         <div class="field">

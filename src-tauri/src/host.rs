@@ -25,18 +25,18 @@ use sha2::{Digest, Sha256};
 use tokio::io::AsyncWriteExt;
 use toml_edit::{DocumentMut, Item, Table};
 
-use crate::paths::{Dirs, reject_steam_paths, write_atomic};
+use crate::{
+    paths::{Dirs, reject_steam_paths, write_atomic},
+    source::{self, FetchError, ReleaseSource},
+};
 
-/// GitHub repository whose releases (tag `server-v*`) carry the server packages.
-pub const REPO: &str = "WaystoneWorks/Poe2Server";
+/// Repository (under the release source's owner) whose releases (tag `server-v*`) carry the
+/// server packages.
+pub const REPO: &str = crate::source::SERVER_REPO;
 /// Asked when [`REPO`] has nothing for this game version and platform: it still holds the
 /// releases `server-v0.1.0` and `server-v0.2.0` made before the server had its own repository.
-pub const FALLBACK_REPO: &str = "WaystoneWorks/Poe2ModdingProject";
+pub const FALLBACK_REPO: &str = crate::source::HUB_REPO;
 pub const TAG_PREFIX: &str = "server-v";
-pub const API_BASE: &str = "https://api.github.com";
-/// Shown to people who want to forward ports.
-pub const HOSTING_GUIDE_URL: &str =
-    "https://github.com/WaystoneWorks/Poe2Server/blob/main/docs/hosting.md";
 /// Plain-text "what is my public IP" service, only asked when the user clicks the button.
 pub const PUBLIC_IP_URL: &str = "https://api.ipify.org";
 
@@ -446,7 +446,7 @@ pub struct GhRelease {
 /// The package picked for this machine.
 #[derive(Debug, Clone, Serialize, PartialEq, Eq)]
 pub struct ServerRelease {
-    /// The repository the release is in ([`REPO`] or [`FALLBACK_REPO`]).
+    /// The repository the release is in (`owner/name` on GitHub, the folder name on a mirror).
     pub repo: String,
     pub tag: String,
     pub version: String,
@@ -538,70 +538,74 @@ pub fn pick_release(releases: &[GhRelease], game_version: &str, os: &str) -> Res
     )
 }
 
-/// Lists the GitHub releases of `repo`. `api_base` is a parameter for tests.
-pub async fn fetch_releases(api_base: &str, repo: &str) -> Result<Vec<GhRelease>> {
-    let url = format!(
-        "{}/repos/{repo}/releases?per_page=30",
-        api_base.trim_end_matches('/')
-    );
-    let res = http_client()?
-        .get(&url)
-        .header("Accept", "application/vnd.github+json")
-        .send()
-        .await
-        .map_err(|e| {
-            anyhow!(
-                "cannot reach GitHub to look for server releases: {}",
-                e.without_url()
-            )
-        })?;
-    let status = res.status();
-    if status.is_success() {
-        return res
-            .json::<Vec<GhRelease>>()
-            .await
-            .context("GitHub's release list is not what was expected");
-    }
-    match status.as_u16() {
-        404 => bail!(
-            "no server releases can be read from github.com/{repo}: the repository is still \
+/// Lists the releases of repository `name` from the release source (GitHub's API or a mirror's
+/// `releases.json`).
+pub async fn fetch_releases(src: &ReleaseSource, name: &str) -> Result<Vec<GhRelease>> {
+    let host = src.host_label();
+    let text = source::fetch_text(
+        &http_client()?,
+        &src.releases_url(name, 30),
+        "application/vnd.github+json",
+        8 << 20,
+    )
+    .await
+    .map_err(|e| match e {
+        FetchError::Unreachable(e) => {
+            anyhow!("cannot reach {host} to look for server releases: {e}")
+        }
+        FetchError::Status(404) if src.is_github() => anyhow!(
+            "no server releases can be read from {}: the repository is still \
              private or has no releases yet (GitHub answers 404 for both). Use \"Use a local \
-             package\" with a package you built or were given"
+             package\" with a package you built or were given",
+            src.describe(name)
         ),
-        403 | 429 => bail!(
-            "GitHub refused the request (HTTP {}), probably a rate limit; try again in a few \
-             minutes, or use \"Use a local package\"",
-            status.as_u16()
+        FetchError::Status(404) => anyhow!(
+            "no server releases can be read from {}: the mirror has no releases.json there. \
+             Use \"Use a local package\" with a package you built or were given",
+            src.describe(name)
         ),
-        code => bail!("GitHub answered HTTP {code} when listing the server releases"),
-    }
+        FetchError::Status(403 | 429) => anyhow!(
+            "{host} refused the request (HTTP 403/429), probably a rate limit; try again in a few \
+             minutes, or use \"Use a local package\""
+        ),
+        FetchError::Status(code) => {
+            anyhow!("{host} answered HTTP {code} when listing the server releases")
+        }
+        e => anyhow!("the server release list could not be read: {e}"),
+    })?;
+    serde_json::from_str::<Vec<GhRelease>>(&text)
+        .with_context(|| format!("{host}'s release list is not what was expected"))
 }
 
 /// The newest server release for `game_version` on `os`: from [`REPO`], and only when that has
 /// none that fits (or cannot be read) from [`FALLBACK_REPO`]. The error is the first
 /// repository's, because that is the one a user should look at.
-pub async fn find_release(api_base: &str, game_version: &str, os: &str) -> Result<ServerRelease> {
+pub async fn find_release(
+    src: &ReleaseSource,
+    game_version: &str,
+    os: &str,
+) -> Result<ServerRelease> {
     platform_for(os)?;
     let first = async {
-        let list = fetch_releases(api_base, REPO).await?;
+        let list = fetch_releases(src, REPO).await?;
         pick_release(&list, game_version, os)
     }
     .await;
     let err = match first {
         Ok(mut r) => {
-            r.repo = REPO.into();
+            r.repo = src.repo_path(REPO);
             return Ok(r);
         }
         Err(e) => e,
     };
     let second = async {
-        let list = fetch_releases(api_base, FALLBACK_REPO).await?;
+        let list = fetch_releases(src, FALLBACK_REPO).await?;
         pick_release(&list, game_version, os)
     }
     .await;
     match second {
         Ok(mut r) => {
-            r.repo = FALLBACK_REPO.into();
+            r.repo = src.repo_path(FALLBACK_REPO);
             Ok(r)
         }
         Err(_) => Err(err),
@@ -662,6 +666,9 @@ pub async fn download(
     dest: &Path,
     progress: &(dyn Fn(u64, u64) + Send + Sync),
 ) -> Result<(String, u64)> {
+    if let Some(src) = source::file_path(url) {
+        return copy_local(&src, dest, progress).await;
+    }
     let res = http_client()?
         .get(url)
         .send()
@@ -692,7 +699,46 @@ pub async fn download(
     Ok((hex::encode(hasher.finalize()), done))
 }
 
+/// "Downloads" from a `file://` address of a release mirror: copies and hashes.
+async fn copy_local(
+    src: &Path,
+    dest: &Path,
+    progress: &(dyn Fn(u64, u64) + Send + Sync),
+) -> Result<(String, u64)> {
+    use tokio::io::AsyncReadExt;
+    let mut input = tokio::fs::File::open(src)
+        .await
+        .with_context(|| format!("the mirror file {} cannot be read", src.display()))?;
+    let total = input.metadata().await.map(|m| m.len()).unwrap_or(0);
+    if let Some(parent) = dest.parent() {
+        tokio::fs::create_dir_all(parent).await?;
+    }
+    let mut file = tokio::fs::File::create(dest).await?;
+    let mut hasher = Sha256::new();
+    let mut done = 0u64;
+    let mut buf = vec![0u8; 256 * 1024];
+    loop {
+        let n = input.read(&mut buf).await?;
+        if n == 0 {
+            break;
+        }
+        hasher.update(&buf[..n]);
+        file.write_all(&buf[..n]).await?;
+        done += n as u64;
+        progress(done, total);
+    }
+    file.flush().await?;
+    Ok((hex::encode(hasher.finalize()), done))
+}
+
 pub async fn download_text(url: &str) -> Result<String> {
+    if let Some(path) = source::file_path(url) {
+        let text = tokio::fs::read_to_string(&path)
+            .await
+            .with_context(|| format!("the checksum file {} cannot be read", path.display()))?;
+        ensure!(text.len() < 4096, "the checksum file is too large");
+        return Ok(text);
+    }
     let res = http_client()?
         .get(url)
         .send()

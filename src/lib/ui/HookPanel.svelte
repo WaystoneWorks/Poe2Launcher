@@ -65,7 +65,7 @@
   </div>
   <p class="hint">
     The hook is a pair of DLLs that connect the game to a private server (and, read-only, watch the official one). The launcher
-    downloads it from <b>github.com/{h?.repo ?? 'WaystoneWorks/Poe2ClientHook'}</b> for <b>{versionLabel(h?.game_version ?? app.version)}</b>, checks its SHA-256
+    downloads it from <b>{h?.source_label ?? 'the release source'}</b> for <b>{versionLabel(h?.game_version ?? app.version)}</b>, checks its SHA-256
     and puts it in its own folder; Play uses it automatically.
   </p>
   {#if h?.source.kind === 'manual'}

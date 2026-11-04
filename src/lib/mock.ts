@@ -29,6 +29,7 @@ export function installMock(params: URLSearchParams): void {
     remember_steam_login: true,
     prefer_code_entry: true,
     theme: params.get('theme') === 'light' ? 'light' : 'dark',
+    release_source: { kind: 'github', api: 'https://api.github.com', owner: 'WaystoneWorks', base: '' },
     mod_sync: params.get('modsync') === 'off' || params.get('modsync') === 'auto' ? (params.get('modsync') as 'off' | 'auto') : 'ask',
   };
   let remembered = true;
@@ -104,7 +105,7 @@ export function installMock(params: URLSearchParams): void {
   });
   let hookVersion: string | null = params.has('nohook') ? null : params.has('hookupdate') ? '0.1.0' : '0.2.0';
   const hookStatus = () => ({
-    game_version: current().official ? '0.5.5e.hotfix1' : current().version, repo: 'WaystoneWorks/Poe2ClientHook',
+    game_version: current().official ? '0.5.5e.hotfix1' : current().version, repo: 'WaystoneWorks/Poe2ClientHook', source_label: 'github.com/WaystoneWorks/Poe2ClientHook',
     source: settings.dll_dir ? { kind: 'manual' } : hookVersion ? { kind: 'downloaded', version: hookVersion } : { kind: 'missing' },
     dll_dir: settings.dll_dir ?? (hookVersion ? `${hookDir}/${hookVersion}` : '/home/user/.local/share/poe2-launcher/hook-dlls'),
     manual_dir: settings.dll_dir, installed: hookVersion ? hookPkg(hookVersion) : null, other_installed: [], busy: false,
@@ -229,6 +230,7 @@ export function installMock(params: URLSearchParams): void {
   const info = (): AppInfo => ({
     launcher_version: '0.2.0', client_version: current().version, game_versions: versions(), os: 'linux',
     data_dir: '/home/user/.local/share/poe2-launcher', config_dir: '/home/user/.config/poe2-launcher',
+    source_host: 'GitHub', server_list_label: 'WaystoneWorks/Poe2ServerList on GitHub',
   });
 
   mockIPC(

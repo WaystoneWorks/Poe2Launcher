@@ -23,6 +23,7 @@ use crate::{
     host::{self, HostDirs, HostSettings, PackageInfo, ServerRelease, local_web_url},
     host_run::{HostRuntime, RunState, StartSpec},
     paths::{reject_steam_paths, write_atomic},
+    source::ReleaseSource,
     verify,
 };
 
@@ -100,7 +101,7 @@ pub struct HostStatus {
     pub log_file: PathBuf,
     pub folder: PathBuf,
     pub busy: bool,
-    pub hosting_guide_url: &'static str,
+    pub hosting_guide_url: String,
 }
 
 /// What Manage > Overview shows under "Usage".
@@ -378,7 +379,7 @@ impl Core {
             log_file: dirs.log_file(),
             folder: dirs.root().to_path_buf(),
             busy: *self.host_busy.lock().unwrap(),
-            hosting_guide_url: host::HOSTING_GUIDE_URL,
+            hosting_guide_url: self.release_source().hosting_guide_url(),
             settings,
         })
     }
@@ -454,28 +455,32 @@ impl Core {
 
     /// The newest server release for this launcher's game version and this OS.
     pub async fn host_find_release(&self) -> Result<ServerRelease> {
-        self.host_find_release_at(host::API_BASE).await
+        self.host_find_release_at(self.release_source()).await
     }
 
-    pub async fn host_find_release_at(&self, api_base: &str) -> Result<ServerRelease> {
+    pub async fn host_find_release_at(
+        &self,
+        src: impl Into<ReleaseSource>,
+    ) -> Result<ServerRelease> {
         self.host_private_only()?;
-        host::find_release(api_base, &self.version().version, self.host_os()).await
+        host::find_release(&src.into(), &self.version().version, self.host_os()).await
     }
 
     /// Finds, downloads, verifies (SHA-256 against the release's `.sha256`) and installs the
     /// newest matching server package for server `id`. A release another server already has is
     /// used without a download.
     pub async fn host_install_latest(&self, id: &str) -> Result<InstallOutcome> {
-        self.host_install_latest_from(id, host::API_BASE).await
+        self.host_install_latest_from(id, self.release_source())
+            .await
     }
 
     pub async fn host_install_latest_from(
         &self,
         id: &str,
-        api_base: &str,
+        src: impl Into<ReleaseSource>,
     ) -> Result<InstallOutcome> {
         self.host_known(id)?;
-        let release = self.host_find_release_at(api_base).await?;
+        let release = self.host_find_release_at(src).await?;
         let _busy = self.host_begin()?;
         self.ensure_host_stopped(id)?;
         if let Ok(current) = self.host_package(&self.host_settings(id)?)

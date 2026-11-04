@@ -18,7 +18,7 @@ use axum::{
 };
 use poe2_launcher_lib::{
     core::{Collector, Core},
-    hook::{self, REPO},
+    hook,
     hook_ops::DllSource,
     keystore::MemoryStore,
     paths::Dirs,
@@ -27,6 +27,9 @@ use poe2_launcher_lib::{
 };
 use serde_json::{Value, json};
 use sha2::{Digest, Sha256};
+
+/// The mock GitHub API serves the default owner's repositories.
+const REPO: &str = concat!(poe2_launcher_lib::default_owner!(), "/Poe2ClientHook");
 
 fn game() -> String {
     VersionFile::known_versions()[0].to_owned()
@@ -656,4 +659,120 @@ async fn real_release_is_found_downloaded_and_verified() {
         .await
         .unwrap();
     assert!(!e.core.hook_check().await.unwrap().update_available);
+}
+
+// --- The static release source ------------------------------------------------------------
+
+/// Writes `<mirror>/Poe2ClientHook/{releases.json, files}` the way `cargo xtask release-mirror`
+/// does; `base` is the address the files are served at (`file:///...` or `http://...`).
+fn write_mirror(dir: &Path, base: &str, rels: &[MockRelease]) {
+    let repo = dir.join("Poe2ClientHook");
+    std::fs::create_dir_all(&repo).unwrap();
+    let list: Vec<Value> = rels
+        .iter()
+        .map(|r| {
+            std::fs::write(repo.join(format!("{}.zip", r.stem)), &r.archive).unwrap();
+            std::fs::write(
+                repo.join(format!("{}.sha256", r.stem)),
+                format!("{}  {}.zip\n", r.claimed, r.stem),
+            )
+            .unwrap();
+            json!({"tag_name": r.tag, "draft": false, "prerelease": r.prerelease, "assets": [
+                {"name": format!("{}.zip", r.stem), "size": r.archive.len(), "browser_download_url": format!("{base}/Poe2ClientHook/{}.zip", r.stem)},
+                {"name": format!("{}.sha256", r.stem), "size": 100, "browser_download_url": format!("{base}/Poe2ClientHook/{}.sha256", r.stem)},
+            ]})
+        })
+        .collect();
+    std::fs::write(repo.join("releases.json"), Value::Array(list).to_string()).unwrap();
+}
+
+fn static_source(base: &str) -> poe2_launcher_lib::source::ReleaseSource {
+    poe2_launcher_lib::source::ReleaseSource {
+        kind: poe2_launcher_lib::source::SourceKind::Static,
+        base: base.into(),
+        ..Default::default()
+    }
+}
+
+#[tokio::test]
+async fn a_file_mirror_installs_the_hook_through_the_saved_setting() {
+    let g = game();
+    let pkg = Pkg::new("0.4.0", &[&g]);
+    let e = env();
+    let dir = e.tmp.path().join("mirror");
+    let base = reqwest::Url::from_file_path(&dir)
+        .unwrap()
+        .to_string()
+        .trim_end_matches('/')
+        .to_owned();
+    write_mirror(&dir, &base, &[MockRelease::of(&pkg)]);
+
+    // The setting is what the buttons use: nothing else names the mirror.
+    let mut s = e.core.settings().unwrap();
+    s.release_source = static_source(&base);
+    e.core.set_settings(s).unwrap();
+    assert_eq!(e.core.hook_status().unwrap().repo, "Poe2ClientHook");
+
+    let c = e.core.hook_check().await.unwrap();
+    assert_eq!(c.release.version, "0.4.0");
+    let out = e.core.hook_install_latest().await.unwrap();
+    assert_eq!(out.hook.version, "0.4.0");
+    assert_eq!(out.sha256.as_deref(), Some(sha256(&pkg.zip()).as_str()));
+    assert_eq!(
+        std::fs::read(out.hook.dir.join("poe_hook.dll")).unwrap(),
+        pkg.loader
+    );
+}
+
+#[tokio::test]
+async fn a_web_mirror_serves_the_same_layout() {
+    let g = game();
+    let pkg = Pkg::new("0.4.1", &[&g]);
+    let e = env();
+    let dir = e.tmp.path().join("mirror");
+    let app = Router::new().fallback_service(tower_http_dir(dir.clone()));
+    let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
+    let base = format!("http://{}/m", listener.local_addr().unwrap());
+    tokio::spawn(async move { axum::serve(listener, app).await.unwrap() });
+    write_mirror(&dir, &base, &[MockRelease::of(&pkg)]);
+
+    let out = e
+        .core
+        .hook_install_latest_from(static_source(&base))
+        .await
+        .unwrap();
+    assert_eq!(out.hook.version, "0.4.1");
+}
+
+/// A minimal static file service rooted at `dir`, under the `/m` prefix.
+fn tower_http_dir(dir: PathBuf) -> axum::routing::MethodRouter {
+    get(move |uri: axum::http::Uri| {
+        let dir = dir.clone();
+        async move {
+            let rel = uri.path().trim_start_matches("/m/");
+            match std::fs::read(dir.join(rel)) {
+                Ok(b) => b.into_response(),
+                Err(_) => StatusCode::NOT_FOUND.into_response(),
+            }
+        }
+    })
+}
+
+#[tokio::test]
+async fn a_mirror_without_a_hook_release_list_says_so() {
+    let e = env();
+    let dir = e.tmp.path().join("empty-mirror");
+    std::fs::create_dir_all(&dir).unwrap();
+    let base = reqwest::Url::from_file_path(&dir)
+        .unwrap()
+        .to_string()
+        .trim_end_matches('/')
+        .to_owned();
+    let err = e
+        .core
+        .hook_check_at(static_source(&base))
+        .await
+        .unwrap_err()
+        .to_string();
+    assert!(err.contains("the release mirror"), "{err}");
 }

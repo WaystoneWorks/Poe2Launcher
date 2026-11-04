@@ -17,7 +17,7 @@ use axum::{
 };
 use poe2_launcher_lib::{
     core::{Collector, Core},
-    host::{HostSettings, REPO},
+    host::HostSettings,
     keystore::MemoryStore,
     paths::Dirs,
 };
@@ -25,6 +25,9 @@ use serde_json::json;
 use sha2::{Digest, Sha256};
 
 const GAME: &str = "0.5.5e.hotfix1";
+
+/// The mock GitHub API serves the default owner's repositories.
+const REPO: &str = concat!(poe2_launcher_lib::default_owner!(), "/Poe2Server");
 
 fn platform() -> &'static str {
     if cfg!(windows) { "windows" } else { "linux" }
@@ -239,6 +242,60 @@ fn env() -> Env {
 #[cfg(unix)]
 mod fake {
     use super::*;
+
+    #[tokio::test]
+    async fn a_file_mirror_installs_a_server_through_the_saved_setting() {
+        use poe2_launcher_lib::source::{ReleaseSource, SourceKind};
+        let archive = fake_package("0.1.0", GAME, &[]);
+        let e = env();
+        let dir = e.tmp.path().join("mirror");
+        let repo = dir.join("Poe2Server");
+        std::fs::create_dir_all(&repo).unwrap();
+        let base = reqwest::Url::from_file_path(&dir)
+            .unwrap()
+            .to_string()
+            .trim_end_matches('/')
+            .to_owned();
+        let n = pkg_name("0.1.0");
+        std::fs::write(repo.join(format!("{n}.{}", ext())), &archive).unwrap();
+        std::fs::write(
+            repo.join(format!("{n}.sha256")),
+            format!("{}  {n}.{}\n", sha256(&archive), ext()),
+        )
+        .unwrap();
+        let list = json!([{"tag_name": "server-v0.1.0", "draft": false, "prerelease": false, "assets": [
+            {"name": format!("{n}.{}", ext()), "size": archive.len(), "browser_download_url": format!("{base}/Poe2Server/{n}.{}", ext())},
+            {"name": format!("{n}.sha256"), "size": 100, "browser_download_url": format!("{base}/Poe2Server/{n}.sha256")},
+        ]}]);
+        std::fs::write(repo.join("releases.json"), list.to_string()).unwrap();
+
+        let mut s = e.core.settings().unwrap();
+        s.release_source = ReleaseSource {
+            kind: SourceKind::Static,
+            base,
+            ..Default::default()
+        };
+        e.core.set_settings(s).unwrap();
+
+        let r = e.core.host_find_release().await.unwrap();
+        assert_eq!(
+            (r.version.as_str(), r.repo.as_str()),
+            ("0.1.0", "Poe2Server")
+        );
+        let out = e.core.host_install_latest(&e.id).await.unwrap();
+        assert!(out.checksum_verified);
+        assert_eq!(out.sha256.as_deref(), Some(sha256(&archive).as_str()));
+        assert!(out.package.dir.join("poe-server").is_file());
+        // The hosting guide link follows the source too.
+        assert!(
+            e.core
+                .host_status(&e.id)
+                .await
+                .unwrap()
+                .hosting_guide_url
+                .ends_with("/Poe2Server/hosting.md")
+        );
+    }
 
     #[tokio::test]
     async fn a_release_is_found_downloaded_verified_and_installed() {

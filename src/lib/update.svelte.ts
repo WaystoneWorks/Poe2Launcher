@@ -1,6 +1,30 @@
-import { check } from '@tauri-apps/plugin-updater';
+import { Channel, invoke } from '@tauri-apps/api/core';
 import { relaunch } from '@tauri-apps/plugin-process';
-import { checkForUpdate, installUpdate, type UpdateDeps, type UpdateHandle, type UpdateState } from './update';
+import { checkForUpdate, installUpdate, type DownloadEvent, type UpdateDeps, type UpdateHandle, type UpdateState } from './update';
+
+interface UpdateMeta {
+  version: string;
+  current_version: string;
+  date?: string | null;
+  body?: string | null;
+}
+
+/** The launcher looks for `latest.json` at the release source (Settings > Advanced), so the check and the install are backend commands. */
+async function check(): Promise<UpdateHandle | null> {
+  const meta = await invoke<UpdateMeta | null>('update_check');
+  if (!meta) return null;
+  return {
+    version: meta.version,
+    currentVersion: meta.current_version,
+    date: meta.date ?? undefined,
+    body: meta.body ?? undefined,
+    async downloadAndInstall(onEvent) {
+      const channel = new Channel<DownloadEvent>();
+      if (onEvent) channel.onmessage = onEvent;
+      await invoke('update_install', { onEvent: channel });
+    },
+  };
+}
 
 const deps: UpdateDeps = { check, relaunch };
 

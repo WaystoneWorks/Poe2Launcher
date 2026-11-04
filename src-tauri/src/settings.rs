@@ -8,7 +8,10 @@ use std::{
 use anyhow::{Context, Result};
 use serde::{Deserialize, Serialize};
 
-use crate::paths::{Dirs, reject_steam_paths, write_atomic};
+use crate::{
+    paths::{Dirs, reject_steam_paths, write_atomic},
+    source::ReleaseSource,
+};
 
 pub const DEFAULT_PROTON: &str = "Proton - Experimental";
 
@@ -54,6 +57,9 @@ pub struct Settings {
     /// missing and block Play), `ask` (default; a dialog with Download) or `auto` (download,
     /// verify and switch without asking, code mods included).
     pub mod_sync: String,
+    /// Where releases, the mod index, the server list and launcher updates are read: GitHub
+    /// (an owner) or a static mirror. Advanced.
+    pub release_source: ReleaseSource,
 }
 
 impl Default for Settings {
@@ -74,6 +80,7 @@ impl Default for Settings {
             prefer_code_entry: true,
             theme: "dark".into(),
             mod_sync: "ask".into(),
+            release_source: ReleaseSource::default(),
         }
     }
 }
@@ -105,6 +112,7 @@ impl Settings {
         if self.game_version.as_deref().is_some_and(str::is_empty) {
             self.game_version = None;
         }
+        self.release_source = self.release_source.normalized();
         self
     }
 
@@ -151,6 +159,7 @@ impl Settings {
         if crate::modsync::SyncMode::parse(&self.mod_sync).is_none() {
             anyhow::bail!("mod sync must be off, ask or auto");
         }
+        self.release_source.validate()?;
         if !matches!(self.theme.as_str(), "dark" | "light") {
             anyhow::bail!("theme must be dark or light");
         }

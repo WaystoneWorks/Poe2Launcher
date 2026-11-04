@@ -52,6 +52,17 @@ export interface LogoutResult {
   message: string;
 }
 
+/** Where releases, the mod index, the server list and launcher updates are read. */
+export interface ReleaseSource {
+  kind: 'github' | 'static';
+  /** `github`: the API address. */
+  api: string;
+  /** `github`: the account or organisation that owns the repositories. */
+  owner: string;
+  /** `static`: `https://host/path`, `http://host/path` or `file:///dir`. */
+  base: string;
+}
+
 export interface Settings {
   /** Where each game version is installed, by version (`official` included); missing = the default folder. */
   install_dirs: Record<string, string>;
@@ -73,6 +84,7 @@ export interface Settings {
   theme: 'dark' | 'light';
   /** What to do when a server requires mods that are not downloaded: `off`, `ask` (default) or `auto`. */
   mod_sync: SyncModeName;
+  release_source: ReleaseSource;
 }
 
 export interface DepotView {
@@ -358,6 +370,10 @@ export interface AppInfo {
   os: string;
   data_dir: string;
   config_dir: string;
+  /** "GitHub" or "the release mirror". */
+  source_host: string;
+  /** Where the public server list is maintained, in words. */
+  server_list_label: string;
 }
 
 export type PromptKind = 'password' | 'guard_device' | 'guard_email';
@@ -509,6 +525,8 @@ export interface HookStatus {
   /** The game version the hook is matched against (Official uses the newest private version). */
   game_version: string;
   repo: string;
+  /** Where the releases are read, in words ("github.com/owner/Poe2ClientHook"). */
+  source_label: string;
   source: DllSource;
   dll_dir: string;
   manual_dir: string | null;

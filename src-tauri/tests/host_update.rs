@@ -25,13 +25,17 @@ use axum::{
 };
 use poe2_launcher_lib::{
     core::{Collector, Core},
-    host::{FALLBACK_REPO, HostSettings, REPO},
+    host::HostSettings,
     host_ops::SetupRequest,
     host_update::UpdateTuning,
     keystore::MemoryStore,
     paths::Dirs,
 };
 use serde_json::json;
+
+/// The mock GitHub API serves the default owner's repositories.
+const REPO: &str = concat!(poe2_launcher_lib::default_owner!(), "/Poe2Server");
+const FALLBACK_REPO: &str = concat!(poe2_launcher_lib::default_owner!(), "/Poe2ModdingProject");
 use sha2::{Digest, Sha256};
 
 const GAME: &str = "0.5.5e.hotfix1";
