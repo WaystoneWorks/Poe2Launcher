@@ -416,6 +416,12 @@ impl Core {
         Ok(c.server_info().await?)
     }
 
+    /// The server's active leagues with their banners (`GET /leagues`).
+    pub async fn server_leagues(&self, id: &str) -> Result<Vec<crate::api::LeagueInfo>> {
+        let (_, c) = self.client_for(id)?;
+        Ok(c.leagues().await?)
+    }
+
     pub async fn login(&self, id: &str, username: &str, password: &str) -> Result<ProfileView> {
         let (p, c) = self.client_for(id)?;
         require_secure(&p, "password")?;
@@ -532,7 +538,15 @@ impl Core {
     /// "Open web admin" of a server hosted here: signed in when its Servers entry is logged in
     /// as an admin, else the plain address (the web admin shows its login, or on a new server
     /// the page that creates the first admin).
-    pub async fn host_web_admin_open(&self, id: &str, opener: &dyn UrlOpener) -> Result<()> {
+    ///
+    /// `page` (a web admin page such as `leagues`) is where the plain address opens; the signed-in
+    /// link always lands on the dashboard, whose "needs a league" popup leads to the same page.
+    pub async fn host_web_admin_open(
+        &self,
+        id: &str,
+        page: Option<&str>,
+        opener: &dyn UrlOpener,
+    ) -> Result<()> {
         let s = self.host_settings(id)?;
         if let Some(pid) = &s.profile_id
             && let Some(p) = self.profiles()?.into_iter().find(|p| &p.id == pid)
@@ -541,8 +555,15 @@ impl Core {
         {
             return self.web_admin_open(pid, opener).await;
         }
+        let page = match page {
+            Some(p) if p.chars().all(|c| c.is_ascii_lowercase() || c == '-') && !p.is_empty() => {
+                format!("#/{p}")
+            }
+            Some(_) => bail!("unknown web admin page"),
+            None => String::new(),
+        };
         opener
-            .open(&format!("{}/", crate::host::local_web_url(&s)))
+            .open(&format!("{}/{page}", crate::host::local_web_url(&s)))
             .map_err(|e| anyhow!("could not open the browser: {e:#}"))
     }
 

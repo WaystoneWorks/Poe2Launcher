@@ -1,7 +1,7 @@
 import { invoke } from '@tauri-apps/api/core';
 import type {
   AppInfo, BackupInfo, BackupSettings, BackupStatus, DesktopEntry, LogContent, LogKind, LogList, NewsFeed, ProbeResult, ServerList, ServerStatus, SpaceCheck, GameVersion, HookCheck, HookOutcome, HookStatus, HostMetrics, HostSettings, HostStatus, InstallOutcome, InstallRequest, InstallStatus,
-  AddedMod, CacheStatus, ModIndex, ModsView, Pruned, SyncPlan, LogoutResult, PlayState, ProfileView, ServerInfo, ServerRelease, Settings, SetupRequest,
+  AddedMod, CacheStatus, ModIndex, ModsView, Pruned, SyncPlan, LogoutResult, PlayState, LeagueInfo, ProfileView, ServerInfo, ServerRelease, Settings, SetupRequest,
   SetupResult, SteamLogin, VerifyReport, ServerUpdateCheck, UpdateOutcome,
 } from './types';
 
@@ -44,7 +44,11 @@ export const ipc = {
   /** Admin only: opens the server's web admin in the system browser, already signed in. */
   webAdminOpen: (id: string) => call<void>('web_admin_open', { id }),
   serverPageOpen: (id: string, page: 'admin' | 'register') => call<void>('server_page_open', { id, page }),
-  hostWebAdminOpen: (id: string) => call<void>('host_web_admin_open', { id }),
+  /** `page`: a web admin page (`leagues`) the plain address opens at. */
+  hostWebAdminOpen: (id: string, page?: string) => call<void>('host_web_admin_open', { id, page: page ?? null }),
+  /** The server's active leagues with banners (`GET /api/v1/leagues`). */
+  serverLeagues: (id: string) => call<LeagueInfo[]>('server_leagues', { id }),
+  serverListLeagues: (id: string) => call<LeagueInfo[]>('server_list_leagues', { id }),
   serverInfo: (id: string) => call<ServerInfo>('server_info', { id }),
   /** `GET /server` plus the round-trip time measured by the launcher. */
   serverStatus: (id: string) => call<ServerStatus>('server_status', { id }),

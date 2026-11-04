@@ -410,6 +410,19 @@ impl Core {
         }
     }
 
+    /// The active leagues of one listed server, with banners.
+    pub async fn server_list_leagues(&self, id: &str) -> Result<Vec<crate::api::LeagueInfo>> {
+        let cache: ListCache = load_cache_as(&self.server_list_cache_file());
+        let s = cache
+            .servers
+            .into_iter()
+            .find(|s| s.id == id)
+            .ok_or_else(|| anyhow!("that server is not in the list (refresh it first)"))?;
+        let c =
+            ApiClient::with_timeouts(&s.address, Duration::from_secs(3), Duration::from_secs(8));
+        Ok(c.leagues().await?)
+    }
+
     /// Asks the listed servers with these ids for their live state.
     pub async fn server_list_probe(&self, ids: &[String]) -> Result<Vec<ProbeResult>> {
         let cache: ListCache = load_cache_as(&self.server_list_cache_file());

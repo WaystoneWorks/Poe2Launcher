@@ -119,6 +119,18 @@ pub async fn server_info(app: App<'_>, id: String) -> Res<ServerInfo> {
     app.server_info(&id).await.map_err(err)
 }
 
+/// The server's active leagues with banners (`GET /leagues`).
+#[tauri::command]
+pub async fn server_leagues(app: App<'_>, id: String) -> Res<Vec<crate::api::LeagueInfo>> {
+    app.server_leagues(&id).await.map_err(err)
+}
+
+/// The same for a server of the public list.
+#[tauri::command]
+pub async fn server_list_leagues(app: App<'_>, id: String) -> Res<Vec<crate::api::LeagueInfo>> {
+    app.server_list_leagues(&id).await.map_err(err)
+}
+
 #[tauri::command]
 pub async fn account_login(
     app: App<'_>,
@@ -173,8 +185,13 @@ pub fn server_page_open(
 
 /// "Open web admin" of a server hosted on this computer.
 #[tauri::command]
-pub async fn host_web_admin_open(app: App<'_>, handle: tauri::AppHandle, id: String) -> Res<()> {
-    app.host_web_admin_open(&id, &TauriOpener(handle))
+pub async fn host_web_admin_open(
+    app: App<'_>,
+    handle: tauri::AppHandle,
+    id: String,
+    page: Option<String>,
+) -> Res<()> {
+    app.host_web_admin_open(&id, page.as_deref(), &TauriOpener(handle))
         .await
         .map_err(err)
 }

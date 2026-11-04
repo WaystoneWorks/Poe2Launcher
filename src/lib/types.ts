@@ -667,3 +667,17 @@ export interface BackupStatus {
   database_size: number | null;
   server_running: boolean;
 }
+
+/** An active league of a server (`GET /api/v1/leagues`); `banner` is a data URL fetched by the launcher. */
+export interface LeagueInfo {
+  id: string;
+  display_name: string;
+  family: string;
+  hardcore: boolean;
+  ssf: boolean;
+  permanent: boolean;
+  is_default: boolean;
+  starts_at: number | null;
+  ends_at: number | null;
+  banner: string | null;
+}

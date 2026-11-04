@@ -348,7 +348,7 @@
   }
 
   function openWebAdmin() {
-    void run(() => ipc.hostWebAdminOpen(id), 'Opening the web admin in your browser...');
+    void run(() => ipc.hostWebAdminOpen(id, status?.setup_needed === true ? 'leagues' : undefined), 'Opening the web admin in your browser...');
   }
 
   const rate = (bps: number | null) => (bps === null ? '-' : `${formatBytes(bps)}/s`);
@@ -387,7 +387,7 @@
         {:else if status.setup_needed === true}
           <div class="notice accent">
             <span class="notice-title"><Icon name="shield" size={16} /> Admin account</span>
-            <p>This server has no account yet. Create its first admin in the web admin: <button type="button" class="link" onclick={openWebAdmin}>open it</button> and pick a name and password. Use the same account to sign in in the game.</p>
+            <p>This server has no account yet. Create its first admin in the web admin: <button type="button" class="link" onclick={openWebAdmin}>open it</button>, pick a name and password, then create its first league on the Leagues page (a new server has none, so players cannot create characters). Use the same account to sign in in the game.</p>
           </div>
         {/if}
         {#if noGame}<p class="err">The game is not installed: <a href="#/library">install it first</a>.</p>{/if}

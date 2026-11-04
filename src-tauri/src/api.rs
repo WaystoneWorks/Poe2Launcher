@@ -57,6 +57,62 @@ pub struct ServerInfo {
 /// Longest message of the day the launcher keeps (characters).
 pub const MAX_MOTD: usize = 2000;
 
+/// One entry of `GET /leagues` (the server's active leagues). `banner_url` is the server's art
+/// path (`/api/v1/art/...`); the launcher fetches it and hands the page a `data:` URL, because the
+/// page may not load images from other hosts.
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+pub struct LeagueInfo {
+    pub id: String,
+    pub display_name: String,
+    #[serde(default)]
+    pub family: String,
+    #[serde(default)]
+    pub hardcore: bool,
+    #[serde(default)]
+    pub ssf: bool,
+    #[serde(default)]
+    pub permanent: bool,
+    #[serde(default)]
+    pub is_default: bool,
+    #[serde(default)]
+    pub starts_at: Option<i64>,
+    #[serde(default)]
+    pub ends_at: Option<i64>,
+    #[serde(default, skip_serializing)]
+    pub banner_url: Option<String>,
+    /// The banner as a `data:image/png;base64,...` URL (set by the launcher, base leagues only).
+    #[serde(default, skip_deserializing)]
+    pub banner: Option<String>,
+}
+
+/// Most banner images fetched per server, and the largest one accepted.
+const MAX_BANNERS: usize = 8;
+const MAX_BANNER_BYTES: usize = 600 * 1024;
+
+/// Standard base64 (RFC 4648) of `bytes`.
+pub fn base64(bytes: &[u8]) -> String {
+    const T: &[u8; 64] = b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+    let mut out = String::with_capacity(bytes.len().div_ceil(3) * 4);
+    for c in bytes.chunks(3) {
+        let n = (u32::from(c[0]) << 16)
+            | (u32::from(*c.get(1).unwrap_or(&0)) << 8)
+            | u32::from(*c.get(2).unwrap_or(&0));
+        out.push(T[(n >> 18) as usize & 63] as char);
+        out.push(T[(n >> 12) as usize & 63] as char);
+        out.push(if c.len() > 1 {
+            T[(n >> 6) as usize & 63] as char
+        } else {
+            '='
+        });
+        out.push(if c.len() > 2 {
+            T[n as usize & 63] as char
+        } else {
+            '='
+        });
+    }
+    out
+}
+
 /// A missing, empty or non-text `motd` is `None`; a long one is cut; control characters other
 /// than line breaks are dropped.
 fn motd_field<'de, D: serde::Deserializer<'de>>(d: D) -> Result<Option<String>, D::Error> {
@@ -159,6 +215,38 @@ impl ApiClient {
 
     pub async fn server_info(&self) -> Result<ServerInfo, ApiError> {
         decode(self.http.get(self.url("/server")).send().await).await
+    }
+
+    /// `GET /leagues` with each base league's banner fetched (see [`LeagueInfo`]). An old server
+    /// without the endpoint (404) has no leagues to show: an empty list, not an error.
+    pub async fn leagues(&self) -> Result<Vec<LeagueInfo>, ApiError> {
+        let mut list: Vec<LeagueInfo> =
+            match decode(self.http.get(self.url("/leagues")).send().await).await {
+                Ok(l) => l,
+                Err(ApiError::Status { status: 404, .. }) => return Ok(Vec::new()),
+                Err(e) => return Err(e),
+            };
+        let mut fetched = 0;
+        for l in list.iter_mut().filter(|l| !l.hardcore && !l.ssf) {
+            let Some(path) = l.banner_url.as_deref() else {
+                continue;
+            };
+            // Only the server's own art endpoint: never an address the server names.
+            if fetched >= MAX_BANNERS || !path.starts_with("/api/v1/art/") || path.contains("..") {
+                continue;
+            }
+            fetched += 1;
+            let url = format!("{}{path}", self.base);
+            if let Ok(res) = self.http.get(url).send().await
+                && res.status().is_success()
+                && let Ok(bytes) = res.bytes().await
+                && bytes.len() <= MAX_BANNER_BYTES
+                && bytes.starts_with(b"\x89PNG")
+            {
+                l.banner = Some(format!("data:image/png;base64,{}", base64(&bytes)));
+            }
+        }
+        Ok(list)
     }
 
     /// `GET <path>` without a token, decoded as `T` (e.g. `/local/metrics`).
@@ -291,6 +379,24 @@ fn describe(e: reqwest::Error) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn base64_matches_the_rfc_vectors() {
+        assert_eq!(base64(b""), "");
+        assert_eq!(base64(b"f"), "Zg==");
+        assert_eq!(base64(b"fo"), "Zm8=");
+        assert_eq!(base64(b"foo"), "Zm9v");
+        assert_eq!(base64(b"foobar"), "Zm9vYmFy");
+    }
+
+    #[test]
+    fn league_list_decodes_the_public_shape() {
+        let j = r#"[{"id":"Dawn","display_name":"Dawn","family":"Dawn","hardcore":false,"ssf":false,"permanent":false,"is_default":true,"banner_url":"/api/v1/art/x","starts_at":null,"ends_at":5,"flag":"X"}]"#;
+        let l: Vec<LeagueInfo> = serde_json::from_str(j).unwrap();
+        assert_eq!(l[0].id, "Dawn");
+        assert_eq!(l[0].ends_at, Some(5));
+        assert!(l[0].banner.is_none());
+    }
 
     #[test]
     fn debug_output_hides_tokens() {

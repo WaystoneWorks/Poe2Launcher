@@ -16,6 +16,7 @@
   import Chip from './Chip.svelte';
   import Empty from './Empty.svelte';
   import Spinner from './Spinner.svelte';
+  import LeagueList from './LeagueList.svelte';
   import type { ListedServer, ProbeResult, ServerList } from '../types';
 
   let list = $state<ServerList | null>(null);
@@ -23,6 +24,7 @@
   let loading = $state(true);
   let probing = $state(false);
   let adding = $state<string | null>(null);
+  let showLeagues = $state<Record<string, boolean>>({});
   let allVersions = $state(false);
   let filter = $state<BrowseFilter>(defaultFilter(null));
 
@@ -175,6 +177,13 @@
               <span class="muted">{p.info.open_registration ? 'registration open' : 'registration closed'}</span>{/if}
           </div>
           {#if p && !p.ok}<p class="hint err">{p.error}</p>{/if}
+          {#if p?.ok}
+            {#if showLeagues[s.id]}
+              <LeagueList load={() => ipc.serverListLeagues(s.id)} />
+            {:else}
+              <button type="button" class="link leagues-toggle" onclick={() => (showLeagues[s.id] = true)}>Show leagues</button>
+            {/if}
+          {/if}
           {#if s.mods.length > 0}
             <p class="hint">Needs mods: {s.mods.map((m) => (m.version ? `${m.id} ${m.version}` : m.id)).join(', ')}. The launcher does not install or sync mods for servers yet.</p>
           {/if}
@@ -200,6 +209,7 @@
 </div>
 
 <style>
+  .leagues-toggle { align-self: flex-start; font-size: 12.5px; }
   .bar { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 14px; margin-bottom: 10px; }
   .search { display: flex; align-items: center; gap: 8px; flex: 1 1 260px; min-width: 200px; padding: 0 10px; border: 1px solid var(--line); border-radius: var(--radius-sm); background: var(--bg-2); color: var(--muted); }
   .search input { border: 0; background: transparent; padding: 8px 0; box-shadow: none; flex: 1; min-width: 0; }

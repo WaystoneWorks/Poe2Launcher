@@ -19,6 +19,7 @@
   import Spinner from '../lib/ui/Spinner.svelte';
   import Tabs from '../lib/ui/Tabs.svelte';
   import ServerBrowser from '../lib/ui/ServerBrowser.svelte';
+  import LeagueList from '../lib/ui/LeagueList.svelte';
   import Drawer from '../lib/ui/Drawer.svelte';
   import HostPanel from '../lib/ui/HostPanel.svelte';
   import type { HostStatus, ProfileView as Profile } from '../lib/types';
@@ -271,6 +272,8 @@
             <dt>Registration</dt><dd>{info.open_registration ? 'open' : 'closed (an admin creates accounts)'}</dd>
             <dt>Game address</dt><dd><code>{info.login_host}:{info.login_port}</code></dd>
           </dl>
+          <h4 class="srv-leagues">Leagues</h4>
+          <LeagueList load={() => ipc.serverLeagues(p.id)} />
         {/if}
         <div class="row srv-tools">
           <button type="button" class="btn sm" onclick={() => check(p.id)} disabled={busy === p.id}>
@@ -421,6 +424,7 @@
   .srv-more { margin-top: var(--sp-2); }
   .srv-more .kv { margin-top: var(--sp-3); font-size: var(--fs-sm); }
   .srv-tools { margin-top: var(--sp-3); }
+  .srv-leagues { margin: var(--sp-3) 0 var(--sp-2); font-size: var(--fs-sm); color: var(--muted); font-weight: 600; }
   .dot-state { width: 8px; height: 8px; border-radius: 50%; background: var(--faint); flex: none; }
   .dot-state.on { background: var(--ok); box-shadow: 0 0 8px var(--ok); }
   .dot-state.warm { background: var(--warn); }

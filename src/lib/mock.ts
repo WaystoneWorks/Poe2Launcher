@@ -245,6 +245,8 @@ export function installMock(params: URLSearchParams): void {
         case 'install_status': return status();
         case 'play_state': return { state: 'idle' };
         case 'server_info': return serverInfo(a.id as string);
+        case 'server_leagues':
+        case 'server_list_leagues': return [{ id: 'Dawn', display_name: 'Dawn', family: 'Dawn', hardcore: false, ssf: false, permanent: false, is_default: true, starts_at: null, ends_at: null, banner: null }, { id: 'HC Dawn', display_name: 'HC Dawn', family: 'Dawn', hardcore: true, ssf: false, permanent: false, is_default: false, starts_at: null, ends_at: null, banner: null }];
         case 'server_status': return { info: serverInfo(a.id as string), ping_ms: pingOf(a.id as string) };
         case 'news_get': return { items: news, fetched_at: params.has('offline') ? 0 : now - 120, offline: params.has('offline') };
         case 'open_link': return null;

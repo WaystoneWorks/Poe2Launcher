@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- **Leagues.** Server details (My servers) and Browse public (*Show leagues*) list the server's active leagues with their banners (`GET /api/v1/leagues`). *Open web admin* on a new hosted server opens the web admin's Leagues page, where its first league is created.
+
 - **Release source.** Settings > Advanced > Release source: GitHub (an owner) or a static mirror (a folder or web server with `<repo>/releases.json`), used for server and client hook releases, news, the mod index, the server list, the hosting guide link and launcher updates. `cargo xtask release-mirror` of the hub builds such a folder from local checkouts. The launcher update check now runs in the backend (the update endpoint follows the source).
 
 ## 0.7.0

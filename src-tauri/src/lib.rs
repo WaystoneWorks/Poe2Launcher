@@ -172,6 +172,8 @@ pub fn run() {
             commands::web_admin_open,
             commands::server_page_open,
             commands::host_web_admin_open,
+            commands::server_leagues,
+            commands::server_list_leagues,
             commands::hook_status,
             commands::hook_check,
             commands::hook_install_latest,
