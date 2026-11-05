@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.7.1
 
 - **Leagues.** Server details (My servers) and Browse public (*Show leagues*) list the server's active leagues with their banners (`GET /api/v1/leagues`). *Open web admin* on a new hosted server opens the web admin's Leagues page, where its first league is created.
 
