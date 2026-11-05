@@ -250,7 +250,15 @@ async fn official_play_deploys_the_read_only_config_and_starts_proton() {
         .to_string();
     assert!(err.contains("running"), "{err}");
     assert!(e.core.play_official().await.is_err());
-    let calls = std::fs::read_to_string(&record).unwrap();
+    // The fake game writes its call after the spawn that made the state Running.
+    let mut calls = String::new();
+    for _ in 0..100 {
+        calls = std::fs::read_to_string(&record).unwrap();
+        if calls.contains("PathOfExileSteam.exe") {
+            break;
+        }
+        tokio::time::sleep(std::time::Duration::from_millis(50)).await;
+    }
     // Started as shipped: no standalone-login argument.
     assert!(calls.contains("PathOfExileSteam.exe"), "{calls}");
     assert!(!calls.contains("--success-event"), "{calls}");
