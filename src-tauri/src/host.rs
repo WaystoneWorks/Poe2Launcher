@@ -1197,7 +1197,9 @@ fn flatten(table: &Table, path: &mut Vec<String>, out: &mut Vec<(Vec<String>, St
 /// every setting of `old_config` whose value differs from `old_example` (or that the old
 /// example does not have at all) is copied over. Settings the user never touched take the new
 /// package's defaults, so keys that are new in this release appear with their defaults and
-/// changed defaults apply. The result is for [`render_config`], which then puts the wizard's
+/// changed defaults apply. A setting the old example had and the new one does not was removed
+/// in this release and is left out, even when the user changed it (the server would only warn
+/// and ignore it). The result is for [`render_config`], which then puts the wizard's
 /// answers on top. A broken `old_config` is an error; the caller then uses the plain example.
 pub fn carry_over_config(old_example: &str, old_config: &str, new_example: &str) -> Result<String> {
     let old_example: DocumentMut = old_example
@@ -1209,12 +1211,16 @@ pub fn carry_over_config(old_example: &str, old_config: &str, new_example: &str)
     let mut doc: DocumentMut = new_example
         .parse()
         .context("the new package's server.example.toml is not valid TOML")?;
-    let (mut base, mut mine) = (Vec::new(), Vec::new());
+    let (mut base, mut mine, mut next) = (Vec::new(), Vec::new(), Vec::new());
     flatten(old_example.as_table(), &mut Vec::new(), &mut base);
     flatten(old_config.as_table(), &mut Vec::new(), &mut mine);
+    flatten(doc.as_table(), &mut Vec::new(), &mut next);
     for (path, text) in mine {
         if base.iter().any(|(p, t)| *p == path && *t == text) {
             continue; // as shipped: take the new default
+        }
+        if base.iter().any(|(p, _)| *p == path) && !next.iter().any(|(p, _)| *p == path) {
+            continue; // removed in this release
         }
         let Some((key, parents)) = path.split_last() else {
             continue;
@@ -1587,7 +1593,6 @@ static_dir = ""
 
 [accounts]
 open_registration = false
-name_prefix = "Exile"
 
 [database]
 path = "runtime/server.sqlite"
@@ -1634,7 +1639,6 @@ path = "runtime/server.sqlite"
         assert_eq!(doc["web"]["bind"].as_str(), Some("0.0.0.0:30080"));
         assert_eq!(doc["web"]["static_dir"].as_str(), Some("web-admin"));
         assert_eq!(doc["accounts"]["open_registration"].as_bool(), Some(true));
-        assert_eq!(doc["accounts"]["name_prefix"].as_str(), Some("Exile"));
         assert_eq!(
             doc["database"]["path"].as_str(),
             Some(dirs.database().to_str().unwrap())
@@ -1792,6 +1796,9 @@ public_host = "127.0.0.1"
 enabled = false
 rate_limit = 60 # per minute
 
+[terrain]
+generated_grid = true # removed in the new release
+
 [[leagues]]
 id = "a"
 
@@ -1826,6 +1833,7 @@ id = "a"
             .replace("public_host = \"127.0.0.1\"", "public_host = \"10.0.0.5\"")
             .replace("enabled = false", "enabled = true")
             .replace("id = \"b\"", "id = \"c\"")
+            .replace("generated_grid = true", "generated_grid = false")
             + "\n[extra]\nnote = \"mine\"\n";
         let out = carry_over_config(OLD_EXAMPLE, &old_cfg, NEW_EXAMPLE).unwrap();
         let doc: DocumentMut = out.parse().unwrap();
@@ -1837,6 +1845,8 @@ id = "a"
         assert_eq!(doc["mods"]["require_client_mods"].as_bool(), Some(false));
         // The users's own section and the changed league list come along as a whole.
         assert_eq!(doc["extra"]["note"].as_str(), Some("mine"));
+        // A key the new release removed stays out, although the user changed it.
+        assert!(doc.get("terrain").is_none(), "{out}");
         let leagues = doc["leagues"].as_array_of_tables().unwrap();
         let ids: Vec<_> = leagues.iter().map(|t| t["id"].as_str().unwrap()).collect();
         assert_eq!(ids, ["a", "c"]);
