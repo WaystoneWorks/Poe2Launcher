@@ -11,6 +11,7 @@
   import UpdatePanel from '../lib/ui/UpdatePanel.svelte';
   import Tabs, { tabId } from '../lib/ui/Tabs.svelte';
   import Icon from '../lib/ui/Icon.svelte';
+  import { radioGroup } from '../lib/radios';
   import Chip from '../lib/ui/Chip.svelte';
   import Switch from '../lib/ui/Switch.svelte';
   import Spinner from '../lib/ui/Spinner.svelte';
@@ -148,7 +149,7 @@
         <div class="card-head"><span class="head-icon"><Icon name="sun" size={16} /></span><h2>Appearance</h2></div>
         <div class="field">
           <span>Theme</span>
-          <div class="pills" role="radiogroup" aria-label="Theme">
+          <div class="pills" role="radiogroup" aria-label="Theme" use:radioGroup={app.settings.theme}>
             <button type="button" class:on={app.settings.theme === 'dark'} role="radio" aria-checked={app.settings.theme === 'dark'} onclick={() => commit({ theme: 'dark' })}><Icon name="moon" size={14} /> Dark</button>
             <button type="button" class:on={app.settings.theme === 'light'} role="radio" aria-checked={app.settings.theme === 'light'} onclick={() => commit({ theme: 'light' })}><Icon name="sun" size={14} /> Light</button>
           </div>
@@ -229,7 +230,7 @@
     {#if tab === 'mods'}
       <section class="card">
         <div class="card-head"><span class="head-icon"><Icon name="mods" size={16} /></span><h2>Mod sync</h2></div>
-        <div class="pills" role="radiogroup" aria-label="Mod sync">
+        <div class="pills" role="radiogroup" aria-label="Mod sync" use:radioGroup={app.settings.mod_sync}>
           {#each syncModes as m (m.id)}
             <button type="button" class:on={app.settings.mod_sync === m.id} role="radio" aria-checked={app.settings.mod_sync === m.id} onclick={() => commit({ mod_sync: m.id })}>{m.label}</button>
           {/each}
@@ -266,7 +267,7 @@
           {#if !sourceIsDefault}<Chip tone="warn" icon="alert">custom</Chip>{/if}
         </div>
         <p class="hint">Where the launcher looks for server and client hook releases, news, the mod index, the public server list and launcher updates. GitHub (an owner) is the default; a static mirror is a web server or folder made by <code>cargo xtask release-mirror</code>.</p>
-        <div class="pills source-pills" role="radiogroup" aria-label="Release source">
+        <div class="pills source-pills" role="radiogroup" aria-label="Release source" use:radioGroup={draft.release_source.kind}>
           <button type="button" class:on={draft.release_source.kind === 'github'} role="radio" aria-checked={draft.release_source.kind === 'github'} onclick={() => saveSource({ kind: 'github' })}>GitHub</button>
           <button type="button" class:on={draft.release_source.kind === 'static'} role="radio" aria-checked={draft.release_source.kind === 'static'} onclick={() => saveSource({ kind: 'static' })}>Static mirror</button>
         </div>

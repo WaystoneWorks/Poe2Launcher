@@ -11,6 +11,7 @@
   import { ms } from '../motion';
   import { SCOPE_ALL, blocksEnable, groupMods, isValid, originLabel, overridable, sideLabel, stepTarget, loadRanks, syncStateLabel, compatLabel } from '../mods';
   import Icon from './Icon.svelte';
+  import Dropdown from './Dropdown.svelte';
   import Chip from './Chip.svelte';
   import Empty from './Empty.svelte';
   import type { ModEntry, ModsView, SyncMod } from '../types';
@@ -134,7 +135,7 @@
           <li>
             <strong>{m.name}</strong> <span class="muted">{m.version}</span>
             <Chip tone={side.tone}>{side.text}</Chip>
-            {#if m.code}<Chip tone="warn" icon="alert">code</Chip>{/if}
+            {#if m.code}<Chip tone="warn" icon="alert">contains code</Chip>{/if}
             <Chip tone={st.tone}>{st.text}</Chip>
             {#if m.state !== 'ready' && m.state !== 'missing' && m.detail}<span class="hint">{m.detail}</span>{/if}
           </li>
@@ -168,7 +169,7 @@
         {@const side = sideLabel(e.side)}
         {@const lab = compatLabel(e.compat)}
         {@const viaAll = !isAll && e.enabled_all && !e.enabled}
-        {@const orderHint = viaAll ? 'Its order is set under All servers' : !e.enabled ? 'Enable it to set its order' : ''}
+        {@const orderHint = viaAll ? 'Its order is set under All servers' : !e.enabled ? 'Enable it to set its order' : stepTarget(data.entries, e.id, -1) === null && stepTarget(data.entries, e.id, 1) === null ? 'The only mod enabled for this server; all-server mods are ordered under All servers' : ''}
         <li in:fly={{ y: 12, duration: ms(240), easing: cubicOut }} out:fade={{ duration: ms(140) }} animate:flip={{ duration: ms(220) }} class:off={!e.in_effect && !e.enabled}>
           <input
             type="checkbox"
@@ -181,14 +182,13 @@
           <div>
             <strong>{e.manifest?.name ?? e.id}</strong>
             {#if g.versions.length > 1}
-              <select class="ver" aria-label="Version of {e.id}" value={e.version} onchange={(ev) => (picked[g.id] = ev.currentTarget.value)}>
-                {#each g.versions as v (v.version)}<option value={v.version}>{v.version}{v.enabled ? ' (on)' : ''}</option>{/each}
-              </select>
+              <Dropdown variant="compact" label="Version of {e.id}" value={e.version} onselect={(val) => (picked[g.id] = val)}
+                items={g.versions.map((v) => ({ value: v.version, label: v.version, sub: v.enabled ? 'on' : undefined }))} />
             {:else}
               <span class="muted">{e.version}</span>
             {/if}
             <Chip tone={side.tone}><span title={side.title}>{side.text}</span></Chip>
-            {#if e.has_code}<Chip tone="warn" icon="alert">code</Chip>{/if}
+            {#if e.has_code}<Chip tone="warn" icon="alert">contains code</Chip>{/if}
             {#if e.in_effect && ranks.has(`${e.id}@${e.version}`)}<Chip tone="ok">load order {ranks.get(`${e.id}@${e.version}`)}</Chip>{/if}
             {#if e.manifest}<Chip tone={lab.tone === 'ok' ? 'ok' : lab.tone === 'bad' ? 'bad' : 'warn'}>{lab.text}</Chip>{/if}
             {#if e.in_effect && (e.origin === 'required' || e.origin === 'dependency')}<Chip tone={e.origin === 'required' ? 'accent' : 'neutral'}>{#if e.origin === 'required'}<Icon name="shield" size={11} /> {/if}{originLabel(e.origin)}</Chip>{/if}
@@ -226,7 +226,6 @@
   .reqlist { list-style: none; margin: 0 0 8px; padding: 0; display: grid; gap: 8px; }
   .reqlist li { display: flex; align-items: center; flex-wrap: wrap; gap: 6px 8px; }
   .notice { margin-bottom: 10px; }
-  .ver { min-height: 26px; padding: 0 6px; width: auto; font-size: 12.5px; }
   .off { opacity: 0.85; }
   .allsw { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: var(--muted); cursor: pointer; }
   .cachehint { margin-top: 16px; }

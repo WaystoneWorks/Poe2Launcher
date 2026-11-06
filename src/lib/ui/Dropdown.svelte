@@ -38,7 +38,7 @@
     placement?: 'down' | 'up';
     align?: 'start' | 'end';
     disabled?: boolean;
-    variant?: 'field' | 'title' | 'attached' | 'plate';
+    variant?: 'field' | 'title' | 'attached' | 'plate' | 'compact';
     trigger?: Snippet<[DropItem | undefined]>;
     footer?: Snippet;
     minWidth?: number;

@@ -253,7 +253,8 @@
             {#if hostTask[hosted.id] === 'start'}<Spinner size={12} />{/if} Start
           </button>
         {/if}
-        {#if !selected}<button type="button" class="btn sm" onclick={() => app.select(p.id)}>Select</button>{/if}
+        {#if !selected}<button type="button" class="btn sm" onclick={() => app.select(p.id)}
+          title={compat.kind === 'other' ? `Play needs ${compat.version}: switch the game version first` : compat.kind === 'unsupported' ? 'This launcher cannot play on it' : undefined}>Select</button>{/if}
         <button type="button" class="btn sm icon ghost" aria-expanded={isOpen(p)} aria-label="Details of {p.name}" title="Details, web admin, edit" onclick={() => (open[p.id] = !isOpen(p))}>
           <Icon name="chevron" size={15} class={isOpen(p) ? 'flip' : ''} />
         </button>

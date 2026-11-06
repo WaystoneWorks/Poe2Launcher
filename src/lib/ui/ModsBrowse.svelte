@@ -6,6 +6,8 @@
   import { formatAgo, formatBytes } from '../format';
   import { SCOPE_ALL, bestVersion, compatLabel, emptyFilter, filterIndex, indexTags, sideLabel, usableVersion } from '../mods';
   import Icon from './Icon.svelte';
+  import Dropdown from './Dropdown.svelte';
+  import { radioGroup } from '../radios';
   import Chip from './Chip.svelte';
   import Empty from './Empty.svelte';
   import Spinner from './Spinner.svelte';
@@ -68,18 +70,15 @@
 <div class="bar">
   <label class="search">
     <Icon name="search" size={15} />
-    <input type="search" placeholder="Search name, description, author, tag" bind:value={filter.query} aria-label="Search mods" />
+    <input type="search" placeholder="Search mods" title="Searches name, description, author and tags" bind:value={filter.query} aria-label="Search mods by name, description, author or tag" />
   </label>
-  <div class="seg" role="radiogroup" aria-label="Side" style="margin-bottom: 0">
+  <div class="pills" role="radiogroup" aria-label="Side" use:radioGroup={filter.side}>
     {#each [['any', 'Any'], ['client', 'Client'], ['both', 'Both'], ['server', 'Server']] as [v, l] (v)}
       <button type="button" role="radio" aria-checked={filter.side === v} class:on={filter.side === v} onclick={() => (filter.side = v as typeof filter.side)}>{l}</button>
     {/each}
   </div>
   {#if tags.length}
-    <select bind:value={filter.tag} aria-label="Tag">
-      <option value="">All tags</option>
-      {#each tags as t (t)}<option value={t}>{t}</option>{/each}
-    </select>
+    <Dropdown label="Tag" value={filter.tag} onselect={(v) => (filter.tag = v)} items={[{ value: '', label: 'All tags' }, ...tags.map((t) => ({ value: t, label: t }))]} />
   {/if}
   <label class="sel"><input type="checkbox" bind:checked={filter.gameOnly} /> Only for {data?.game_version ?? 'this game version'}</label>
   <button type="button" class="btn icon ghost" title="Refresh the index" aria-label="Refresh the index" disabled={loading} onclick={() => load(true)}>
@@ -97,7 +96,7 @@
     {/if}
     {#if index.skipped.length}<span title={index.skipped.join('\n')}><Chip tone="warn">{index.skipped.length} entries skipped</Chip></span>{/if}
     <span class="grow"></span>
-    <span class="hint">Installing enables for: <b>{scopeName}</b> (change it above)</span>
+    <span class="hint">Install and enable turns it on for <b>{scopeName}</b> (change it above)</span>
   </div>
   {#if index.offline && index.error}<p class="hint">The index could not be reached ({index.error}); what you see is the last copy. This is quiet: nothing else is affected.</p>{/if}
 {/if}
@@ -126,7 +125,7 @@
         <div class="top">
           <strong class="name">{m.name}</strong>
           <Chip tone={side.tone}><span title={side.title}>{side.text}</span></Chip>
-          {#if v && v.hook_api !== null}<Chip tone="warn" icon="alert">code</Chip>{/if}
+          {#if v && v.hook_api !== null}<Chip tone="warn" icon="alert">contains code</Chip>{/if}
           <span class="grow"></span>
           {#if m.licence}<span class="muted">{m.licence}</span>{/if}
         </div>
@@ -139,9 +138,8 @@
           {@const lab = compatLabel(v.compat)}
           <div class="vrow">
             {#if m.versions.length > 1}
-              <select aria-label="Version of {m.name}" value={v.version} onchange={(ev) => (picked[m.id] = ev.currentTarget.value)}>
-                {#each m.versions as x (x.version)}<option value={x.version}>{x.version}{x.yanked ? ' (withdrawn)' : ''}{usableVersion(x) ? '' : ' - not usable here'}</option>{/each}
-              </select>
+              <Dropdown variant="compact" label="Version of {m.name}" value={v.version} onselect={(val) => (picked[m.id] = val)}
+                items={m.versions.map((x) => ({ value: x.version, label: x.version, sub: [x.yanked ? 'withdrawn' : '', usableVersion(x) ? '' : 'not usable here'].filter(Boolean).join(' · ') || undefined }))} />
             {:else}
               <span>{v.version}</span>
             {/if}
@@ -170,9 +168,9 @@
 
 <style>
   .bar { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 14px; margin: 14px 0 10px; }
-  .search { display: flex; align-items: center; gap: 8px; flex: 1 1 200px; min-width: 200px; padding: 0 10px; border: 1px solid var(--line); border-radius: var(--radius-sm); background: var(--bg-2); color: var(--muted); }
-  .search input { border: 0; background: transparent; flex: 1; min-width: 0; box-shadow: none !important; }
-  .bar select { width: auto; flex: none; }
+  .search { display: flex; align-items: center; gap: 8px; flex: 1 1 180px; min-width: 0; min-height: 36px; padding: 0 10px; border: 1px solid var(--line); border-radius: var(--radius-sm); background: var(--bg-2); color: var(--muted); }
+  .search input { border: 0; background: transparent; padding: 6px 0; flex: 1; min-width: 0; box-shadow: none !important; }
+  .bar :global(.dd-trigger) { min-width: 120px; }
   .sel { display: flex; align-items: center; gap: 6px; font-size: 12.5px; color: var(--muted); }
   .meta { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px; margin-bottom: 12px; }
   .loading-row { display: flex; align-items: center; gap: 10px; justify-content: center; padding: 40px; color: var(--muted); }
@@ -184,6 +182,5 @@
   .chips { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
   .by { font-size: 12px; margin-left: auto; }
   .vrow { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 10px; }
-  .vrow select { width: auto; min-height: 28px; }
   .foot { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 10px; margin-top: auto; padding-top: 10px; border-top: 1px solid var(--line-soft); }
 </style>

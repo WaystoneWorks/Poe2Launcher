@@ -49,7 +49,7 @@
               {#if m.code}<Chip tone="warn" icon="alert">contains code</Chip>{:else}<Chip>data only</Chip>{/if}
               {#if m.state === 'changed'}<Chip tone="warn">replaces a cached copy</Chip>{/if}
               <div class="meta">
-                <code>{m.id}</code> - {formatBytes(m.size)}{#if m.authors.length}{' - ' + m.authors.join(', ')}{/if}
+                <code>{m.id}</code> · {formatBytes(m.size)}{#if m.authors.length}{' · ' + m.authors.join(', ')}{/if}
                 {#if m.description}<div>{m.description}</div>{/if}
               </div>
             </div>

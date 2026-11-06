@@ -1,5 +1,6 @@
 <script lang="ts">
   import { slide } from 'svelte/transition';
+  import { radioGroup } from '../lib/radios';
   import { app } from '../lib/app.svelte';
   import { ipc } from '../lib/ipc';
   import { run } from '../lib/notify.svelte';
@@ -45,10 +46,10 @@
   </button>
 </PageHead>
 
-<div class="chips" role="radiogroup" aria-label="Show">
+<div class="pills chips" role="radiogroup" aria-label="Show" use:radioGroup={filter}>
   {#each filters as f (f.id)}
     {@const count = f.id === 'all' ? items.length : items.filter((n) => n.source === f.id).length}
-    <button type="button" class="fchip" class:on={filter === f.id} role="radio" aria-checked={filter === f.id} disabled={count === 0 && f.id !== 'all'} onclick={() => (filter = f.id)}>
+    <button type="button" class:on={filter === f.id} role="radio" aria-checked={filter === f.id} disabled={count === 0 && f.id !== 'all'} onclick={() => (filter = f.id)}>
       {f.label}{#if f.id !== 'all'} <span class="n">{count}</span>{/if}
     </button>
   {/each}
@@ -97,12 +98,8 @@
 
 <style>
   .chips { display: flex; gap: var(--sp-2); flex-wrap: wrap; margin-bottom: var(--sp-5); }
-  .fchip { padding: 5px 13px; border: 1px solid var(--line); border-radius: var(--radius-pill); background: none; color: var(--muted); font: 500 var(--fs-sm) / 1.4 var(--font); cursor: pointer; transition: border-color var(--dur) var(--ease), color var(--dur) var(--ease), background var(--dur) var(--ease); }
-  .fchip:hover:not(:disabled) { color: var(--text); border-color: color-mix(in srgb, var(--gold) 40%, var(--line)); }
-  .fchip .n { margin-left: 6px; font-size: 11px; padding: 0 6px; border-radius: 99px; background: var(--surface-3); font-variant-numeric: tabular-nums; }
-  .fchip.on { border-color: var(--gold); color: var(--gold-2); background: color-mix(in srgb, var(--gold) 8%, transparent); }
-  .fchip:disabled { opacity: 0.45; cursor: default; }
-  .fchip .n { font-size: 11px; color: var(--faint); margin-left: 2px; }
+  .chips .n { margin-left: 2px; color: var(--muted); font-size: 11px; padding: 0 6px; border-radius: 99px; background: var(--surface-3); font-variant-numeric: tabular-nums; }
+  .chips button:disabled { opacity: 0.45; cursor: default; }
   .feed { max-width: var(--read-w); display: flex; flex-direction: column; gap: var(--sp-4); }
   .post { border: 1px solid var(--line); border-radius: var(--radius-lg); background: var(--surface); padding: var(--sp-5) var(--sp-5) var(--sp-4); display: flex; flex-direction: column; gap: var(--sp-2); }
   .post.pin { border-color: color-mix(in srgb, var(--gold) 50%, var(--line)); background: linear-gradient(90deg, color-mix(in srgb, var(--crimson) 22%, var(--surface)), var(--surface)); }

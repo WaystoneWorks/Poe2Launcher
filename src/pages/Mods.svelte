@@ -1,5 +1,6 @@
 <script lang="ts">
   import { app } from '../lib/app.svelte';
+  import { router } from '../lib/router.svelte';
   import { ipc } from '../lib/ipc';
   import { run } from '../lib/notify.svelte';
   import { defaultScope, scopeOptions } from '../lib/mods';
@@ -11,7 +12,11 @@
 
   // Mods are per server: the page works on one server's set at a time (or on "All servers").
   let scope = $state(defaultScope(app.settings?.selected_profile, app.profiles));
-  let view = $state<'installed' | 'browse'>('installed');
+  // The sub-tab is in the URL (`#/library?tab=mods&view=browse`) like the other tabs.
+  const view = $derived<'installed' | 'browse'>(router.route.query.get('view') === 'browse' ? 'browse' : 'installed');
+  function setView(v: 'installed' | 'browse') {
+    router.go('library', { tab: 'mods', view: v === 'browse' ? 'browse' : undefined });
+  }
   let data = $state<ModsView | null>(null);
 
   const options = $derived(scopeOptions(app.profiles));
@@ -45,14 +50,14 @@
   value={view}
   panel="mods-panel"
   label="Mods"
-  onchange={(id) => (view = id as 'installed' | 'browse')}
+  onchange={(id) => setView(id as 'installed' | 'browse')}
 />
 
 <div id="mods-panel" role="tabpanel" aria-labelledby={tabId('mods-panel', view)}>
   {#if view === 'browse'}
-    <ModsBrowse {data} {scope} reload={load} openInstalled={() => (view = 'installed')} />
+    <ModsBrowse {data} {scope} reload={load} openInstalled={() => setView('installed')} />
   {:else}
-    <ModsInstalled {data} {scope} reload={load} openBrowse={() => (view = 'browse')} />
+    <ModsInstalled {data} {scope} reload={load} openBrowse={() => setView('browse')} />
   {/if}
 </div>
 

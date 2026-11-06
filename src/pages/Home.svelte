@@ -4,6 +4,7 @@
   import { formatNewsDate } from '../lib/format';
   import { serverCompat } from '../lib/gameversion';
   import { updateHeadline } from '../lib/host';
+  import { hookReady, setupNeeded, setupSteps } from '../lib/hook';
   import { router } from '../lib/router.svelte';
   import Icon from '../lib/ui/Icon.svelte';
   import Spinner from '../lib/ui/Spinner.svelte';
@@ -57,6 +58,14 @@
     return null;
   });
 
+  /** The setup checklist is on screen: its buttons already lead to the fix. */
+  const checklist = $derived(
+    setupNeeded(
+      setupSteps({ gameInstalled: app.status?.installed ?? false, hookReady: hookReady(app.hook), profiles: app.profiles.length }).filter(
+        (s) => !app.official || s.id !== 'server',
+      ),
+    ),
+  );
   const MANAGE = '__manage__';
   const serverItems = $derived<DropItem[]>([
     ...app.profiles.map((p) => ({
@@ -135,7 +144,7 @@
         {stateText}
       {:else if blocker && !running}
         <Icon name="alert" size={13} /> {blocker.replace(/ \((Library|Servers)\)$/, '')}
-        {#if fixLink}<a href={fixLink.href}>{fixLink.label}</a>{/if}
+        {#if fixLink && !checklist}<a href={fixLink.href}>{fixLink.label}</a>{/if}
         {#if sel && !app.official && compat.kind === 'other'}<button type="button" class="link" onclick={() => app.switchVersion(compat.version)}>Switch to {compat.version}</button>{/if}
       {:else}
         <span class="ok-dot"></span> Ready to play

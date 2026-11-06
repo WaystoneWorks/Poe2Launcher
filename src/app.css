@@ -215,6 +215,8 @@ tbody tr:hover { background: color-mix(in srgb, var(--surface-2) 70%, transparen
   transition: border-color var(--dur-fast) var(--ease), background var(--dur-fast) var(--ease);
 }
 .dd-trigger:hover:not(:disabled) { border-color: var(--faint); }
+.dd.compact .dd-trigger { min-height: 26px; gap: 6px; padding: 0 6px 0 8px; font-size: var(--fs-sm); }
+.dd.compact .dd-trigger > .icon:last-child { width: 13px; height: 13px; }
 .dd.open .dd-trigger { border-color: var(--gold); }
 .dd-trigger:disabled { opacity: 0.55; cursor: not-allowed; }
 .dd-label { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
