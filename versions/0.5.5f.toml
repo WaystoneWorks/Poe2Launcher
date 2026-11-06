@@ -1,9 +1,7 @@
-# Game client 0.5.5e Hotfix 1 (Steam app "Path of Exile 2", 2026-10-28): a client-only rebuild of
-# 0.5.5e ("Fixed a bug where minimap landscape geometry could fail to render correctly"; the servers
-# were not restarted), and since 2026-10-29 the only supported build (0.5.5e was dropped). Same
-# protocol, opcodes and deserializers as 0.5.5e; 16 of 154,537 functions changed, the rest moved by
-# small deltas (dumps/0.5.5e.hotfix1/addr_map.tsv, scripts/re/addr_map.py). Game data: no table, .tgr, .dgr,
-# .tdt, .tmd or .arm changed (texture headers, a few models and effects did).
+# Game client 0.5.5f (Steam app "Path of Exile 2", build revision 328049, 2026-11-05/06), the only
+# supported build (0.5.5e Hotfix 1 was dropped when it arrived). Changed against 0.5.5e Hotfix 1:
+# instance opcodes from 0x2ef up moved by +3 and from 0x35d up by +4, InstanceDetails has a new
+# string, World fields moved, the instance cipher builder is inlined (docs/re/update-compatibility.md).
 #
 # THE one place that defines a supported client build. It lives in Poe2Protocol
 # (versions/<version>.toml, next to opcodes/<version>/). Read by the servers (Poe2Server:
@@ -17,42 +15,42 @@
 # consumer's checkout (its working directory), which has this repository at modules/protocol
 # and Poe2ClientHook at modules/client-hook: Poe2Server and the hub both do. Sections a
 # consumer does not know are ignored by it (the launcher reads depots, [exe] and [verify]).
-version = "0.5.5e.hotfix1"
+version = "0.5.5f"
 # supported = tested end to end; experimental = signatures resolve, layouts unchecked;
 # legacy = kept for old captures only.
-status = "supported"
+status = "experimental"
 app_id = 2694490
 # `Build Revision:` of Client.txt, a plain ASCII string in the exe's .rdata.
-build_revision = "326410"
+build_revision = "328049"
 
 # Both depots go into ONE directory, in this order: the later depot overwrites the earlier one
 # ("exe over content"). The launcher passes them to DepotDownloader in a single run, in file
 # order, so the player enters a Steam Guard code once.
 [[depots]]
 id = 2694491
-manifest = "4712263798014036045"
+manifest = "5662192306551403401"
 role = "content"
 
 [[depots]]
 id = 2694492
-manifest = "4973272861086296374"
+manifest = "3411296386151915616"
 role = "windows exe"
 
-# The executable. Every number was measured on the GameFiles copy of the 0.5.5e Hotfix 1 install
+# The executable. Every number was measured on the GameFiles copy of the 0.5.5f install
 # (manifests from the Steam app manifest of that install), NOT on a depot download made by the
 # launcher: the first real install must confirm them.
 [exe]
 name = "PathOfExileSteam.exe"
 # SHA-256 of the exe as installed by Steam. Leave out or set to "TODO" if unknown: the check
 # is then skipped and says so.
-sha256 = "d46f4c27576122afc41a428eef96b3b4c75592a16827ed8c2204508ab06a455d"
+sha256 = "7e0d36655e6e788202d2d588429c45064bbf87caec95938ebb19a317947c834e"
 # false: a mismatch is a warning (the value is unconfirmed against the depot). Set true once a
 # real depot install has matched.
 sha256_enforce = false
-size = 78336856
+size = 78440792
 # PE header fields: the build fingerprint the client DLL selects its signature table by.
-pe_timestamp = 0x6ae12470
-image_size = 0x04ca0000
+pe_timestamp = 0x6aed487d
+image_size = 0x04cba000
 
 # What "verified" means for an install (launcher: src-tauri/src/verify.rs). Sanity floors (the
 # GameFiles copy has 64783 files, 150.8 GB, without logs and hook files) and files that must
@@ -63,11 +61,11 @@ min_bytes = 130000000000
 
 [[verify.files]]
 path = "PathOfExileSteam.exe"
-size = 78336856
+size = 78440792
 
 [[verify.files]]
 path = "Bundles2/_.index.bin"
-size = 115161316
+size = 116427003
 
 [[verify.files]]
 path = "steam_api64.dll"
@@ -83,12 +81,11 @@ size = 466560
 
 # Opcode tables (login.toml, instance.toml, hnc.toml, inventories.tsv, deserializers.tsv).
 [protocol]
-# The hotfix changed no opcode and no deserializer of 0.5.5e (check-build fingerprints).
-opcodes = "modules/protocol/opcodes/0.5.5e.hotfix1"
+opcodes = "modules/protocol/opcodes/0.5.5f"
 
 # The client DLL's signature table and what `check-build` treats as required.
 [client_hook]
-signatures = "modules/client-hook/signatures/0.5.5e.hotfix1.toml"
+signatures = "modules/client-hook/signatures/0.5.5f.toml"
 # Features (of the signature table) the private server cannot do without: a missing or
 # ambiguous entry of one of them makes `check-build` exit 2. Entries of the other (research)
 # features only make it exit 1.
@@ -99,13 +96,11 @@ required_features = [
 
 # What the server learns about the client. The client sends no version string; the 32-byte
 # `client_hash` of 0x0003/0x0005 is a SHA-256 of the executable file (LoginClientHash_Get32,
-# 0x1420e7700). Confirmed for this build in game on 2026-10-28: standalone token logins of the
-# hotfix client with this value listed and hashes_confirmed = false logged no "cannot be checked"
-# line, i.e. the client's hash is the exe's SHA-256. Other builds are refused
+# 0x1420f65d0). Other builds are refused
 # ([security] allow_unknown_client = false) with BackendErrors `InvalidProtocolVersion`.
 [client]
-hashes = ["d46f4c27576122afc41a428eef96b3b4c75592a16827ed8c2204508ab06a455d"]
-hashes_confirmed = true
+hashes = ["7e0d36655e6e788202d2d588429c45064bbf87caec95938ebb19a317947c834e"]
+hashes_confirmed = false
 # Strings `check-build` must find in the exe (ASCII or UTF-16LE): command-line options, file
 # names and log lines that tools and the DLL depend on.
 strings = [
@@ -123,10 +118,10 @@ schema_sha256 = "7ae47829279b06cbbebdde293643b442938b7490654cf05f1ad31b5a581360e
 
 # Row counts as of this build (a difference is a warning: a data patch adds rows).
 [data.row_counts]
-Stats = 27281
-ActionTypes = 963
+Stats = 27299
+ActionTypes = 964
 Inventories = 121
-BackendErrors = 715
+BackendErrors = 721
 BuffDefinitions = 3218
 
 # Rows the server addresses by index. A different row is an error: the index is a key.

@@ -426,7 +426,7 @@ mod tests {
     #[test]
     fn old_servers_without_the_new_fields_still_parse() {
         let info: ServerInfo = serde_json::from_str(
-            r#"{"name":"n","version":"0.5.5e.hotfix1","cluster_id":"c","online":0,"open_registration":false,
+            r#"{"name":"n","version":"0.5.5f","cluster_id":"c","online":0,"open_registration":false,
                 "login_host":"h","login_port":20481,"uptime_secs":3}"#,
         )
         .unwrap();
@@ -438,7 +438,7 @@ mod tests {
     fn the_message_of_the_day_is_optional_and_tidied() {
         let parse = |motd: &str| -> Option<String> {
             serde_json::from_str::<ServerInfo>(&format!(
-                r#"{{"name":"n","version":"0.5.5e.hotfix1","cluster_id":"c","online":0,"open_registration":false,
+                r#"{{"name":"n","version":"0.5.5f","cluster_id":"c","online":0,"open_registration":false,
                     "login_host":"h","login_port":20481,"uptime_secs":3,"motd":{motd}}}"#
             ))
             .unwrap()

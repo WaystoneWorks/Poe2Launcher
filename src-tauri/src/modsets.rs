@@ -471,7 +471,7 @@ mod tests {
     /// Adds `id version` with a manifest body extra (`[load]`, `[dependencies]`, ...).
     fn add(e: &Env, id: &str, version: &str, extra: &str) {
         let text = format!(
-            "manifest_version = 1\nid = \"{id}\"\nname = \"{id}\"\nversion = \"{version}\"\n{extra}\n[game]\nversions = [\"0.5.5e.hotfix1\"]\nhook_api = 1\n[entry]\ndll = \"{id}.dll\"\n"
+            "manifest_version = 1\nid = \"{id}\"\nname = \"{id}\"\nversion = \"{version}\"\n{extra}\n[game]\nversions = [\"0.5.5f\"]\nhook_api = 1\n[entry]\ndll = \"{id}.dll\"\n"
         );
         // `[load]`/`[dependencies]` sections must come before [game]: build the order by hand.
         let dir = e.t.path().join(format!("pk-{id}-{version}"));
@@ -512,7 +512,7 @@ mod tests {
             &[req("req-mod", "1.0.0")],
             &[pin("own-mod", "1.0.0")],
             &[],
-            "0.5.5e.hotfix1",
+            "0.5.5f",
             1,
         );
         assert_eq!(ids(&s), ["req-mod", "own-mod"]);
@@ -524,7 +524,7 @@ mod tests {
         // other-mod is cached but not enabled anywhere: not loaded.
         assert!(!ids(&s).contains(&"other-mod".to_string()));
         // On another server (no requirement, no pin) nothing is loaded.
-        let none = effective(&e.cache, &[], &[], &[], "0.5.5e.hotfix1", 1);
+        let none = effective(&e.cache, &[], &[], &[], "0.5.5f", 1);
         assert!(none.members.is_empty());
         // Global pins apply to every server.
         let g = effective(
@@ -532,7 +532,7 @@ mod tests {
             &[],
             &[],
             &[pin("other-mod", "1.0.0")],
-            "0.5.5e.hotfix1",
+            "0.5.5f",
             1,
         );
         assert_eq!(ids(&g), ["other-mod"]);
@@ -548,7 +548,7 @@ mod tests {
             &[req("req-mod", "1.0.0")],
             &[pin("req-mod", "2.0.0")],
             &[],
-            "0.5.5e.hotfix1",
+            "0.5.5f",
             1,
         );
         assert_eq!(s.members.len(), 1);
@@ -560,7 +560,7 @@ mod tests {
             &[req("req-mod", "2.0.0")],
             &[],
             &[],
-            "0.5.5e.hotfix1",
+            "0.5.5f",
             1,
         );
         assert_eq!(s2.members[0].version, "2.0.0");
@@ -575,7 +575,7 @@ mod tests {
             &[req("gone-mod", "1.0.0")],
             &[pin("own-mod", "9.9.9")],
             &[],
-            "0.5.5e.hotfix1",
+            "0.5.5f",
             1,
         );
         assert_eq!(s.problems.len(), 1);
@@ -600,7 +600,7 @@ mod tests {
             &[],
             &[pin("user-mod", "1.0.0")],
             &[],
-            "0.5.5e.hotfix1",
+            "0.5.5f",
             1,
         );
         assert_eq!(ids(&s), ["lib-mod", "user-mod"]);
@@ -632,7 +632,7 @@ mod tests {
             &[req("req-mod", "1.0.0")],
             &[pin("needs-mod", "1.0.0"), pin("clash-mod", "1.0.0")],
             &[],
-            "0.5.5e.hotfix1",
+            "0.5.5f",
             1,
         );
         assert_eq!(ids(&s), ["req-mod"]);
@@ -672,7 +672,7 @@ mod tests {
             force: true,
             ..pin("old-mod", "1.0.0")
         };
-        let s = effective(&e.cache, &[], &[forced], &[], "0.5.5e.hotfix1", 2);
+        let s = effective(&e.cache, &[], &[forced], &[], "0.5.5f", 2);
         assert!(s.members.is_empty());
     }
 
@@ -693,7 +693,7 @@ mod tests {
             &[req("aa-mod", "1.0.0")],
             &[pin("bb-mod", "1.0.0")],
             &[],
-            "0.5.5e.hotfix1",
+            "0.5.5f",
             1,
         );
         let r = apply_to_game(&game, &s1, &e.cache).unwrap();
@@ -721,7 +721,7 @@ mod tests {
             &[req("aa-mod", "1.0.0")],
             &[],
             &[],
-            "0.5.5e.hotfix1",
+            "0.5.5f",
             1,
         );
         let r = apply_to_game(&game, &s2, &e.cache).unwrap();
@@ -730,7 +730,7 @@ mod tests {
         // A server with no mods at all: state.toml is emptied, the files go.
         let r = apply_to_game(
             &game,
-            &effective(&e.cache, &[], &[], &[], "0.5.5e.hotfix1", 1),
+            &effective(&e.cache, &[], &[], &[], "0.5.5f", 1),
             &e.cache,
         )
         .unwrap();
@@ -754,7 +754,7 @@ mod tests {
             &[req("shared-mod", "1.0.0")],
             &[],
             &[],
-            "0.5.5e.hotfix1",
+            "0.5.5f",
             1,
         );
         apply_to_game(&game, &a, &e.cache).unwrap();
@@ -767,7 +767,7 @@ mod tests {
             &[req("shared-mod", "2.0.0")],
             &[],
             &[],
-            "0.5.5e.hotfix1",
+            "0.5.5f",
             1,
         );
         let r = apply_to_game(&game, &b, &e.cache).unwrap();
@@ -799,7 +799,7 @@ mod tests {
             &[],
             &[pin("aa-mod", "1.0.0"), pin("bb-mod", "1.0.0")],
             &[],
-            "0.5.5e.hotfix1",
+            "0.5.5f",
             1,
         );
         let err = apply_to_game(&game, &s, &e.cache).unwrap_err().to_string();

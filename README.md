@@ -1,6 +1,6 @@
 # Poe2Launcher
 
-Desktop launcher for the Path of Exile 2 private server (Poe2ModdingProject). It supports every client build that has a `versions/<version>.toml` in Poe2Protocol (today 0.5.5e.hotfix1) plus an *Official (read-only)* mode, and does for each player what `cargo xtask deploy-client` and `run-client` do for the developer.
+Desktop launcher for the Path of Exile 2 private server (Poe2ModdingProject). It supports every client build that has a `versions/<version>.toml` in Poe2Protocol (today 0.5.5f) plus an *Official (read-only)* mode, and does for each player what `cargo xtask deploy-client` and `run-client` do for the developer.
 
 The launcher has no login of its own and creates no accounts. Accounts belong to each server; the player signs in on the game's login screen. It manages several servers: ones you join (My servers, the public list) and ones you host on this computer.
 
@@ -111,7 +111,7 @@ client-hook/         submodule: Poe2ClientHook (poe-hook-deploy as a path depend
 
 The dropdown lists every embedded `versions/<version>.toml` (adding a build is adding a file, see [new-game-version.md](https://github.com/WaystoneWorks/Poe2ModdingProject/blob/main/docs/guides/new-game-version.md)) plus *Official (read-only)*, which reuses the newest file's depots without manifests, with its own folder `game/official` and the hook in read-only mode. The selection is `Settings.game_version`; install folders are per version (`Settings.install_dirs`; the old single `install_dir` moves to the oldest version when read).
 
-For 0.5.5e.hotfix1: app 2694490; depot 2694491 manifest 4712263798014036045 (content), depot 2694492 manifest 4973272861086296374 (Windows exe). Both go into one directory in file order (exe over content), in **one** DepotDownloader run so Steam Guard is asked once.
+For 0.5.5f: app 2694490; depot 2694491 manifest 4712263798014036045 (content), depot 2694492 manifest 4973272861086296374 (Windows exe). Both go into one directory in file order (exe over content), in **one** DepotDownloader run so Steam Guard is asked once.
 
 - DepotDownloader **3.4.0**, self-contained (no .NET), pinned with SHA-256 in `versions/depotdownloader.toml`; downloaded over HTTPS to `<data>/tools/`, refused and deleted on a mismatch.
 - Arguments: `-app 2694490 -depot A -manifest MA -depot B -manifest MB -username U [-remember-password] [-no-mobile] -dir DIR [-validate]`. `-remember-password` only if ticked; never `-password`.

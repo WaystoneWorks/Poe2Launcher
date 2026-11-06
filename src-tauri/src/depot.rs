@@ -598,8 +598,8 @@ mod tests {
 
     fn job(remember: bool, code: bool, validate: bool) -> DownloadJob {
         DownloadJob {
-            // The manifests asserted below are 0.5.5e.hotfix1's.
-            version: VersionFile::embedded("0.5.5e.hotfix1").unwrap(),
+            // The manifests asserted below are 0.5.5f's.
+            version: VersionFile::embedded("0.5.5f").unwrap(),
             dir: PathBuf::from("/games/poe2"),
             username: "steamuser".into(),
             remember_password: remember,

@@ -1417,8 +1417,8 @@ mod tests {
     #[test]
     fn package_folder_names_come_from_the_asset() {
         assert_eq!(
-            package_name_of_asset("poe-server-v0.4.0-game-0.5.5e.hotfix1-linux-x86_64.tar.gz"),
-            Some("poe-server-v0.4.0-game-0.5.5e.hotfix1-linux-x86_64")
+            package_name_of_asset("poe-server-v0.4.0-game-0.5.5f-linux-x86_64.tar.gz"),
+            Some("poe-server-v0.4.0-game-0.5.5f-linux-x86_64")
         );
         assert_eq!(package_name_of_asset("other.zip"), None);
     }
@@ -1444,25 +1444,25 @@ mod tests {
     #[test]
     fn asset_names_are_parsed() {
         let n =
-            parse_asset_name("poe-server-v0.1.0-game-0.5.5e.hotfix1-linux-x86_64.tar.gz").unwrap();
+            parse_asset_name("poe-server-v0.1.0-game-0.5.5f-linux-x86_64.tar.gz").unwrap();
         assert_eq!(
             n,
             AssetName {
                 version: "0.1.0".into(),
-                game_version: "0.5.5e.hotfix1".into(),
+                game_version: "0.5.5f".into(),
                 platform: "linux".into(),
                 ext: "tar.gz".into()
             }
         );
-        let w = parse_asset_name("poe-server-v0.2.0-rc1-game-0.5.5e.hotfix1-windows-x86_64.zip")
+        let w = parse_asset_name("poe-server-v0.2.0-rc1-game-0.5.5f-windows-x86_64.zip")
             .unwrap();
         assert_eq!(
             (w.version.as_str(), w.platform.as_str(), w.ext.as_str()),
             ("0.2.0-rc1", "windows", "zip")
         );
         for bad in [
-            "poe-server-v0.1.0-game-0.5.5e.hotfix1-macos-x86_64.tar.gz",
-            "poe-server-v0.1.0-game-0.5.5e.hotfix1-linux-x86_64.sha256",
+            "poe-server-v0.1.0-game-0.5.5f-macos-x86_64.tar.gz",
+            "poe-server-v0.1.0-game-0.5.5f-linux-x86_64.sha256",
             "poe-server-v0.1.0-linux-x86_64.zip",
             "other.tar.gz",
         ] {
@@ -1470,10 +1470,10 @@ mod tests {
         }
     }
 
-    const LIN: &str = "poe-server-v0.1.0-game-0.5.5e.hotfix1-linux-x86_64.tar.gz";
-    const LIN_SHA: &str = "poe-server-v0.1.0-game-0.5.5e.hotfix1-linux-x86_64.sha256";
-    const LIN2: &str = "poe-server-v0.2.0-game-0.5.5e.hotfix1-linux-x86_64.tar.gz";
-    const LIN2_SHA: &str = "poe-server-v0.2.0-game-0.5.5e.hotfix1-linux-x86_64.sha256";
+    const LIN: &str = "poe-server-v0.1.0-game-0.5.5f-linux-x86_64.tar.gz";
+    const LIN_SHA: &str = "poe-server-v0.1.0-game-0.5.5f-linux-x86_64.sha256";
+    const LIN2: &str = "poe-server-v0.2.0-game-0.5.5f-linux-x86_64.tar.gz";
+    const LIN2_SHA: &str = "poe-server-v0.2.0-game-0.5.5f-linux-x86_64.sha256";
 
     #[test]
     fn the_newest_matching_stable_release_wins() {
@@ -1485,26 +1485,26 @@ mod tests {
                 &[
                     LIN2,
                     LIN2_SHA,
-                    "poe-server-v0.2.0-game-0.5.5e.hotfix1-windows-x86_64.zip",
+                    "poe-server-v0.2.0-game-0.5.5f-windows-x86_64.zip",
                 ],
             ),
             rel(
                 "server-v0.3.0-rc1",
                 true,
                 &[
-                    "poe-server-v0.3.0-rc1-game-0.5.5e.hotfix1-linux-x86_64.tar.gz",
-                    "poe-server-v0.3.0-rc1-game-0.5.5e.hotfix1-linux-x86_64.sha256",
+                    "poe-server-v0.3.0-rc1-game-0.5.5f-linux-x86_64.tar.gz",
+                    "poe-server-v0.3.0-rc1-game-0.5.5f-linux-x86_64.sha256",
                 ],
             ),
             rel("v9.9.9", false, &["unrelated"]),
         ];
-        let r = pick_release(&all, "0.5.5e.hotfix1", "linux").unwrap();
+        let r = pick_release(&all, "0.5.5f", "linux").unwrap();
         assert_eq!((r.version.as_str(), r.asset_name.as_str()), ("0.2.0", LIN2));
         assert!(r.sha256_url.ends_with(LIN2_SHA));
         // A pre-release is taken only when nothing stable fits.
         let only_pre = vec![all[2].clone()];
         assert!(
-            pick_release(&only_pre, "0.5.5e.hotfix1", "linux")
+            pick_release(&only_pre, "0.5.5f", "linux")
                 .unwrap()
                 .prerelease
         );
@@ -1516,20 +1516,20 @@ mod tests {
         let e = pick_release(&all, "0.6.0", "linux")
             .unwrap_err()
             .to_string();
-        assert!(e.contains("0.6.0") && e.contains("0.5.5e.hotfix1"), "{e}");
-        let e = pick_release(&all, "0.5.5e.hotfix1", "windows")
+        assert!(e.contains("0.6.0") && e.contains("0.5.5f"), "{e}");
+        let e = pick_release(&all, "0.5.5f", "windows")
             .unwrap_err()
             .to_string();
         assert!(e.contains("windows"), "{e}");
         // No checksum file next to the archive: not usable.
         let nosha = vec![rel("server-v0.1.0", false, &[LIN])];
-        assert!(pick_release(&nosha, "0.5.5e.hotfix1", "linux").is_err());
-        assert!(pick_release(&[], "0.5.5e.hotfix1", "linux").is_err());
-        assert!(pick_release(&all, "0.5.5e.hotfix1", "macos").is_err());
+        assert!(pick_release(&nosha, "0.5.5f", "linux").is_err());
+        assert!(pick_release(&[], "0.5.5f", "linux").is_err());
+        assert!(pick_release(&all, "0.5.5f", "macos").is_err());
         // Drafts are ignored.
         let mut draft = rel("server-v0.1.0", false, &[LIN, LIN_SHA]);
         draft.draft = true;
-        assert!(pick_release(&[draft], "0.5.5e.hotfix1", "linux").is_err());
+        assert!(pick_release(&[draft], "0.5.5f", "linux").is_err());
     }
 
     #[test]
@@ -1571,7 +1571,7 @@ mod tests {
 
     const EXAMPLE: &str = r#"# header comment
 [game]
-version = "0.5.5e.hotfix1"
+version = "0.5.5f"
 game_dir = "GameFiles"
 
 [network]
@@ -1615,7 +1615,7 @@ path = "runtime/server.sqlite"
         let out = render_config(EXAMPLE, &s, Path::new("/games/poe2"), &dirs).unwrap();
         let doc: toml_edit::DocumentMut = out.parse().unwrap();
         assert_eq!(doc["game"]["game_dir"].as_str(), Some("/games/poe2"));
-        assert_eq!(doc["game"]["version"].as_str(), Some("0.5.5e.hotfix1"));
+        assert_eq!(doc["game"]["version"].as_str(), Some("0.5.5f"));
         assert_eq!(doc["network"]["public_host"].as_str(), Some("203.0.113.7"));
         assert_eq!(
             doc["network"]["login"]["bind"].as_str(),
@@ -1749,7 +1749,7 @@ path = "runtime/server.sqlite"
             std::fs::write(
                 r.join("release.json"),
                 format!(
-                    r#"{{"name":"n","server_version":"0.2.1","game_version":"0.5.5e.hotfix1","platform":"{}"}}"#,
+                    r#"{{"name":"n","server_version":"0.2.1","game_version":"0.5.5f","platform":"{}"}}"#,
                     platform_for(std::env::consts::OS).unwrap()
                 ),
             )
@@ -1757,27 +1757,27 @@ path = "runtime/server.sqlite"
             put(server_exe_name(std::env::consts::OS));
             put("config/server.example.toml");
             put("third_party/dat-schema/schema-poe2.min.json");
-            put("modules/protocol/opcodes/0.5.5e.hotfix1/a.toml");
+            put("modules/protocol/opcodes/0.5.5f/a.toml");
             if let Some(v) = version_file {
                 put(v);
             }
             d
         };
         let check = |d: &tempfile::TempDir| {
-            inspect_package(d.path(), "0.5.5e.hotfix1", std::env::consts::OS)
+            inspect_package(d.path(), "0.5.5f", std::env::consts::OS)
                 .map(|p| p.server_version)
         };
         assert_eq!(
-            check(&make(Some("modules/protocol/versions/0.5.5e.hotfix1.toml"))).unwrap(),
+            check(&make(Some("modules/protocol/versions/0.5.5f.toml"))).unwrap(),
             "0.2.1"
         );
         assert_eq!(
-            check(&make(Some("versions/0.5.5e.hotfix1.toml"))).unwrap(),
+            check(&make(Some("versions/0.5.5f.toml"))).unwrap(),
             "0.2.1"
         );
         let e = check(&make(None)).unwrap_err().to_string();
         assert!(
-            e.contains("modules/protocol/versions/0.5.5e.hotfix1.toml"),
+            e.contains("modules/protocol/versions/0.5.5f.toml"),
             "{e}"
         );
         // The version file of another game version does not count.
@@ -1786,7 +1786,7 @@ path = "runtime/server.sqlite"
 
     const OLD_EXAMPLE: &str = r#"# old
 [game]
-version = "0.5.5e.hotfix1"
+version = "0.5.5f"
 game_dir = "GameFiles"
 
 [network]
@@ -1808,7 +1808,7 @@ id = "b"
 
     const NEW_EXAMPLE: &str = r#"# new
 [game]
-version = "0.5.5e.hotfix1"
+version = "0.5.5f"
 game_dir = "GameFiles"
 
 [network]

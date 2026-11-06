@@ -86,7 +86,7 @@ pub fn parse_asset_name(name: &str) -> Option<AssetName> {
     })
 }
 
-/// Game versions look like `0.5.5e.hotfix1`; they end up in file names and are compared as text.
+/// Game versions look like `0.5.5f`; they end up in file names and are compared as text.
 pub fn valid_game_version(g: &str) -> bool {
     !g.is_empty()
         && g.len() <= 32
@@ -531,23 +531,23 @@ mod tests {
 
     #[test]
     fn asset_names_are_taken_apart() {
-        let n = parse_asset_name("poe-hook-v0.2.0-game-0.5.5e.hotfix1-windows-x86_64.zip").unwrap();
+        let n = parse_asset_name("poe-hook-v0.2.0-game-0.5.5f-windows-x86_64.zip").unwrap();
         assert_eq!(
             (n.version.as_str(), n.game_versions),
-            ("0.2.0", vec!["0.5.5e.hotfix1".to_owned()])
+            ("0.2.0", vec!["0.5.5f".to_owned()])
         );
         let n =
-            parse_asset_name("poe-hook-v1.0.0-rc.1-game-0.5.5e.hotfix1_0.6.0-windows-x86_64.zip")
+            parse_asset_name("poe-hook-v1.0.0-rc.1-game-0.5.5f_0.6.0-windows-x86_64.zip")
                 .unwrap();
         assert_eq!(n.version, "1.0.0-rc.1");
-        assert_eq!(n.game_versions, ["0.5.5e.hotfix1", "0.6.0"]);
+        assert_eq!(n.game_versions, ["0.5.5f", "0.6.0"]);
         for bad in [
-            "poe-hook-v0.2.0-game-0.5.5e.hotfix1-windows-x86_64.sha256",
-            "poe-hook-v0.2.0-game-0.5.5e.hotfix1-linux-x86_64.zip",
-            "poe-hook-vx-game-0.5.5e.hotfix1-windows-x86_64.zip",
+            "poe-hook-v0.2.0-game-0.5.5f-windows-x86_64.sha256",
+            "poe-hook-v0.2.0-game-0.5.5f-linux-x86_64.zip",
+            "poe-hook-vx-game-0.5.5f-windows-x86_64.zip",
             "poe-hook-v0.2.0-game--windows-x86_64.zip",
             "poe-hook-v0.2.0-game-../x-windows-x86_64.zip",
-            "poe-server-v0.1.0-game-0.5.5e.hotfix1-linux-x86_64.tar.gz",
+            "poe-server-v0.1.0-game-0.5.5f-linux-x86_64.tar.gz",
         ] {
             assert!(parse_asset_name(bad).is_none(), "{bad}");
         }
@@ -556,13 +556,13 @@ mod tests {
     #[test]
     fn the_newest_stable_release_for_the_game_version_wins() {
         let rs = vec![
-            release("hook-v0.2.0", false, "0.2.0", "0.5.5e.hotfix1"),
-            release("hook-v0.3.0", false, "0.3.0", "0.5.5e.hotfix1"),
-            release("hook-v0.4.0-rc1", true, "0.4.0-rc1", "0.5.5e.hotfix1"),
+            release("hook-v0.2.0", false, "0.2.0", "0.5.5f"),
+            release("hook-v0.3.0", false, "0.3.0", "0.5.5f"),
+            release("hook-v0.4.0-rc1", true, "0.4.0-rc1", "0.5.5f"),
             release("hook-v0.9.0", false, "0.9.0", "0.6.0"),
-            release("server-v9.0.0", false, "9.0.0", "0.5.5e.hotfix1"),
+            release("server-v9.0.0", false, "9.0.0", "0.5.5f"),
         ];
-        let r = pick_release(&rs, "0.5.5e.hotfix1").unwrap();
+        let r = pick_release(&rs, "0.5.5f").unwrap();
         assert_eq!(
             (r.tag.as_str(), r.version.as_str()),
             ("hook-v0.3.0", "0.3.0")
@@ -574,10 +574,10 @@ mod tests {
             "hook-v0.4.0-rc1",
             true,
             "0.4.0-rc1",
-            "0.5.5e.hotfix1",
+            "0.5.5f",
         )];
         assert!(
-            pick_release(&only_pre, "0.5.5e.hotfix1")
+            pick_release(&only_pre, "0.5.5f")
                 .unwrap()
                 .prerelease
         );
@@ -585,20 +585,20 @@ mod tests {
 
     #[test]
     fn a_wrong_game_version_or_a_missing_checksum_is_a_clear_refusal() {
-        let rs = vec![release("hook-v0.2.0", false, "0.2.0", "0.5.5e.hotfix1")];
+        let rs = vec![release("hook-v0.2.0", false, "0.2.0", "0.5.5f")];
         let err = pick_release(&rs, "0.7.0").unwrap_err().to_string();
         assert!(
-            err.contains("0.7.0") && err.contains("0.5.5e.hotfix1"),
+            err.contains("0.7.0") && err.contains("0.5.5f"),
             "{err}"
         );
         let no_sum = vec![rel(
             "hook-v0.2.0",
             false,
-            &["poe-hook-v0.2.0-game-0.5.5e.hotfix1-windows-x86_64.zip"],
+            &["poe-hook-v0.2.0-game-0.5.5f-windows-x86_64.zip"],
         )];
-        assert!(pick_release(&no_sum, "0.5.5e.hotfix1").is_err());
+        assert!(pick_release(&no_sum, "0.5.5f").is_err());
         assert!(
-            pick_release(&[], "0.5.5e.hotfix1")
+            pick_release(&[], "0.5.5f")
                 .unwrap_err()
                 .to_string()
                 .contains("no client hook release")
@@ -607,7 +607,7 @@ mod tests {
 
     #[test]
     fn listed_paths_stay_inside_the_package() {
-        for ok in ["poe_hook.dll", "signatures/0.5.5e.hotfix1.toml"] {
+        for ok in ["poe_hook.dll", "signatures/0.5.5f.toml"] {
             assert!(safe_listed_path(ok), "{ok}");
         }
         for bad in [

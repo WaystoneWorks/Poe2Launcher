@@ -337,7 +337,7 @@ export type PlayState =
 
 /** One entry of the version dropdown ("Official (read-only)" first, then the private versions, newest first). */
 export interface GameVersion {
-  /** `official` or a client version such as `0.5.5e.hotfix1`. */
+  /** `official` or a client version such as `0.5.5f`. */
   version: string;
   app_id: number;
   official: boolean;

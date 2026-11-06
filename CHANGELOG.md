@@ -13,7 +13,7 @@
 
 ## 0.6.0
 
-- **Client 0.5.5e Hotfix 1 only.** 0.5.5e is no longer offered; saved settings for it (its install folder, a selected 0.5.5e) are dropped when the settings are read. The nested client hook is hook-v0.5.0.
+- **Client 0.5.5f only.** 0.5.5e is no longer offered; saved settings for it (its install folder, a selected 0.5.5e) are dropped when the settings are read. The nested client hook is hook-v0.5.0.
 - **Several hosted servers.** Servers has a third tab, **Host**: every server on this computer with its state, ports, Start/Stop and Manage, and **Create a server** (a name; the next free ports, +10 per server). Each server has its own folder (`<data>/servers/<id>/`: database, its own `server.toml`, mods, backups, log) and settings (`<config>/servers/<id>.json`); downloaded server programs are shared. The single server of earlier versions becomes `s1` by itself. Hosted servers also appear in *My servers* with a *hosted* badge and a quick Start.
 - **Delete means delete.** Deleting a hosted server (Settings > Danger zone, or *Remove* on its row) asks you to type its name, then stops it and removes its folder, settings and Servers entry.
 - **Manage** has four tabs: *Overview* (Start/Stop, Open web admin, **usage**: CPU, memory, tick time, network, uptime, version; the log), *Settings* (one column of sections that fold with an arrow; *Start with the launcher* moved here; an Apply bar when something changed), *Program*, *Backups*. The separate Log tab is gone. A stale "autostart failed" note disappears once a fitting package is installed.
@@ -22,7 +22,7 @@
 
 ## 0.5.0
 
-- Knows client 0.5.5e Hotfix 1 (`versions/0.5.5e.hotfix1.toml`); the nested client hook moved to hook-v0.4.0 (was hook-v0.2.0+3).
+- Knows client 0.5.5f (`versions/0.5.5f.toml`); the nested client hook moved to hook-v0.4.0 (was hook-v0.2.0+3).
 
 - **New look and layout (UI rework, direction "Ash & Blood").** New app icon, the *rune seal* (`assets/icon.svg`, all sizes regenerated; the same mark is the web admin's logo). Dark red-black with gold accents, a crimson Play button, Cinzel headings over Inter (both bundled, SIL OFL); the light theme became a parchment variant. Design tokens in `src/tokens.css` and `src/lib/motion.ts` (identical copies in the web admin): one easing curve, 150-250 ms for hovers and panels, 350 ms page fades, skeletons while loading, nothing under *reduce motion*; the looping shine, drift and float animations are gone.
 - **Sidebar:** brand, the **game version picker** (moved from the title bar; a list joined to its box with *installed* / *not installed*), Play, Servers, **News** (new page, with a count of unseen items), Library, Settings; account and About at the foot. The custom frame is now a thin strip with the window buttons; the update badge moved to the sidebar.

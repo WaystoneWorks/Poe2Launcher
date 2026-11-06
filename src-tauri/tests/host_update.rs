@@ -38,7 +38,7 @@ const REPO: &str = concat!(poe2_launcher_lib::default_owner!(), "/Poe2Server");
 const FALLBACK_REPO: &str = concat!(poe2_launcher_lib::default_owner!(), "/Poe2ModdingProject");
 use sha2::{Digest, Sha256};
 
-const GAME: &str = "0.5.5e.hotfix1";
+const GAME: &str = "0.5.5f";
 
 fn pkg_name(version: &str) -> String {
     format!("poe-server-v{version}-game-{GAME}-linux-x86_64")
@@ -49,8 +49,8 @@ fn repo_name(full: &str) -> &str {
 }
 
 const OLD_EXAMPLE: &str =
-    "[game]\nversion = \"0.5.5e.hotfix1\"\ngame_dir = \"GameFiles\"\n\n[web]\nrate_limit = 60\n";
-const NEW_EXAMPLE: &str = "[game]\nversion = \"0.5.5e.hotfix1\"\ngame_dir = \"GameFiles\"\n\n[web]\nrate_limit = 120\ncors = \"none\"\n\n[mods]\nrequire_client_mods = false\n";
+    "[game]\nversion = \"0.5.5f\"\ngame_dir = \"GameFiles\"\n\n[web]\nrate_limit = 60\n";
+const NEW_EXAMPLE: &str = "[game]\nversion = \"0.5.5f\"\ngame_dir = \"GameFiles\"\n\n[web]\nrate_limit = 120\ncors = \"none\"\n\n[mods]\nrequire_client_mods = false\n";
 
 /// A `poe-server` that answers the one-shot `account` commands and otherwise runs until it is
 /// stopped, noting each start (and its version) in `started.log` of its folder.
@@ -102,7 +102,7 @@ fn package(version: &str, new_layout: bool, exe: &[u8], example: &str) -> Vec<u8
         ),
         (
             version_file,
-            b"version = \"0.5.5e.hotfix1\"\n".to_vec(),
+            b"version = \"0.5.5f\"\n".to_vec(),
             0o644,
         ),
         (
@@ -111,7 +111,7 @@ fn package(version: &str, new_layout: bool, exe: &[u8], example: &str) -> Vec<u8
             0o644,
         ),
         (
-            "modules/protocol/opcodes/0.5.5e.hotfix1/a.toml".into(),
+            "modules/protocol/opcodes/0.5.5f/a.toml".into(),
             b"x = 1\n".to_vec(),
             0o644,
         ),
@@ -640,7 +640,7 @@ async fn the_fallback_repository_and_both_layouts_work_for_a_stopped_server() {
     assert!(
         out.package
             .dir
-            .join("versions/0.5.5e.hotfix1.toml")
+            .join("versions/0.5.5f.toml")
             .is_file()
     );
     let cfg = std::fs::read_to_string(e.cfg()).unwrap();
