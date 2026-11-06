@@ -276,10 +276,7 @@ mod tests {
     fn install_dirs_are_per_version() {
         let dirs = Dirs::under(Path::new("/r"));
         let s = Settings {
-            install_dirs: BTreeMap::from([(
-                "0.5.5f".to_owned(),
-                PathBuf::from("/games/a"),
-            )]),
+            install_dirs: BTreeMap::from([("0.5.5f".to_owned(), PathBuf::from("/games/a"))]),
             ..Settings::default()
         };
         assert_eq!(

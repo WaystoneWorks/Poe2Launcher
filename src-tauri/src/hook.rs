@@ -537,8 +537,7 @@ mod tests {
             ("0.2.0", vec!["0.5.5f".to_owned()])
         );
         let n =
-            parse_asset_name("poe-hook-v1.0.0-rc.1-game-0.5.5f_0.6.0-windows-x86_64.zip")
-                .unwrap();
+            parse_asset_name("poe-hook-v1.0.0-rc.1-game-0.5.5f_0.6.0-windows-x86_64.zip").unwrap();
         assert_eq!(n.version, "1.0.0-rc.1");
         assert_eq!(n.game_versions, ["0.5.5f", "0.6.0"]);
         for bad in [
@@ -570,27 +569,15 @@ mod tests {
         assert!(r.sha256_url.ends_with(".sha256"));
         assert_eq!(pick_release(&rs, "0.6.0").unwrap().version, "0.9.0");
         // A pre-release only when nothing stable fits.
-        let only_pre = vec![release(
-            "hook-v0.4.0-rc1",
-            true,
-            "0.4.0-rc1",
-            "0.5.5f",
-        )];
-        assert!(
-            pick_release(&only_pre, "0.5.5f")
-                .unwrap()
-                .prerelease
-        );
+        let only_pre = vec![release("hook-v0.4.0-rc1", true, "0.4.0-rc1", "0.5.5f")];
+        assert!(pick_release(&only_pre, "0.5.5f").unwrap().prerelease);
     }
 
     #[test]
     fn a_wrong_game_version_or_a_missing_checksum_is_a_clear_refusal() {
         let rs = vec![release("hook-v0.2.0", false, "0.2.0", "0.5.5f")];
         let err = pick_release(&rs, "0.7.0").unwrap_err().to_string();
-        assert!(
-            err.contains("0.7.0") && err.contains("0.5.5f"),
-            "{err}"
-        );
+        assert!(err.contains("0.7.0") && err.contains("0.5.5f"), "{err}");
         let no_sum = vec![rel(
             "hook-v0.2.0",
             false,

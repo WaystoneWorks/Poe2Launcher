@@ -1443,8 +1443,7 @@ mod tests {
 
     #[test]
     fn asset_names_are_parsed() {
-        let n =
-            parse_asset_name("poe-server-v0.1.0-game-0.5.5f-linux-x86_64.tar.gz").unwrap();
+        let n = parse_asset_name("poe-server-v0.1.0-game-0.5.5f-linux-x86_64.tar.gz").unwrap();
         assert_eq!(
             n,
             AssetName {
@@ -1454,8 +1453,7 @@ mod tests {
                 ext: "tar.gz".into()
             }
         );
-        let w = parse_asset_name("poe-server-v0.2.0-rc1-game-0.5.5f-windows-x86_64.zip")
-            .unwrap();
+        let w = parse_asset_name("poe-server-v0.2.0-rc1-game-0.5.5f-windows-x86_64.zip").unwrap();
         assert_eq!(
             (w.version.as_str(), w.platform.as_str(), w.ext.as_str()),
             ("0.2.0-rc1", "windows", "zip")
@@ -1764,22 +1762,15 @@ path = "runtime/server.sqlite"
             d
         };
         let check = |d: &tempfile::TempDir| {
-            inspect_package(d.path(), "0.5.5f", std::env::consts::OS)
-                .map(|p| p.server_version)
+            inspect_package(d.path(), "0.5.5f", std::env::consts::OS).map(|p| p.server_version)
         };
         assert_eq!(
             check(&make(Some("modules/protocol/versions/0.5.5f.toml"))).unwrap(),
             "0.2.1"
         );
-        assert_eq!(
-            check(&make(Some("versions/0.5.5f.toml"))).unwrap(),
-            "0.2.1"
-        );
+        assert_eq!(check(&make(Some("versions/0.5.5f.toml"))).unwrap(), "0.2.1");
         let e = check(&make(None)).unwrap_err().to_string();
-        assert!(
-            e.contains("modules/protocol/versions/0.5.5f.toml"),
-            "{e}"
-        );
+        assert!(e.contains("modules/protocol/versions/0.5.5f.toml"), "{e}");
         // The version file of another game version does not count.
         assert!(check(&make(Some("versions/0.6.0.toml"))).is_err());
     }

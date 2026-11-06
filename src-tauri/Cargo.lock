@@ -3026,7 +3026,7 @@ dependencies = [
 
 [[package]]
 name = "poe-hook-deploy"
-version = "0.5.3"
+version = "0.6.0"
 dependencies = [
  "anyhow",
  "poe-hook-mods",
@@ -3034,11 +3034,11 @@ dependencies = [
 
 [[package]]
 name = "poe-hook-mod-api"
-version = "0.5.3"
+version = "0.6.0"
 
 [[package]]
 name = "poe-hook-mods"
-version = "0.5.3"
+version = "0.6.0"
 dependencies = [
  "poe-hook-mod-api",
  "semver",
@@ -3050,7 +3050,7 @@ dependencies = [
 
 [[package]]
 name = "poe2-launcher"
-version = "0.7.1"
+version = "0.8.0"
 dependencies = [
  "anyhow",
  "axum",

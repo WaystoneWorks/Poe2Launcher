@@ -100,11 +100,7 @@ fn package(version: &str, new_layout: bool, exe: &[u8], example: &str) -> Vec<u8
             example.as_bytes().to_vec(),
             0o644,
         ),
-        (
-            version_file,
-            b"version = \"0.5.5f\"\n".to_vec(),
-            0o644,
-        ),
+        (version_file, b"version = \"0.5.5f\"\n".to_vec(), 0o644),
         (
             "third_party/dat-schema/schema-poe2.min.json".into(),
             b"{}".to_vec(),
@@ -637,12 +633,7 @@ async fn the_fallback_repository_and_both_layouts_work_for_a_stopped_server() {
         !e.core.runtime(&e.id).is_running(),
         "a stopped server stays stopped"
     );
-    assert!(
-        out.package
-            .dir
-            .join("versions/0.5.5f.toml")
-            .is_file()
-    );
+    assert!(out.package.dir.join("versions/0.5.5f.toml").is_file());
     let cfg = std::fs::read_to_string(e.cfg()).unwrap();
     assert!(cfg.contains("cors = \"none\""));
 

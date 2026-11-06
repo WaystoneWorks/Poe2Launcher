@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.8.0
+
+- **Game 0.5.5f.** The launcher now installs and runs client 0.5.5f (revision 328049), the only supported build, with its hook and server packages. Steam's depots and exe checks follow the new build.
+
 ## 0.7.1
 
 - **Leagues.** Server details (My servers) and Browse public (*Show leagues*) list the server's active leagues with their banners (`GET /api/v1/leagues`). *Open web admin* on a new hosted server opens the web admin's Leagues page, where its first league is created.
