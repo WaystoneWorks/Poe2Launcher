@@ -212,7 +212,7 @@
               <button type="button" class="btn icon sm ghost" title={orderHint ? undefined : 'Load earlier'} aria-label="Load {e.manifest?.name ?? e.id} earlier" disabled={!e.enabled || stepTarget(data.entries, e.id, -1) === null} onclick={() => step(e, -1)}><Icon name="up" size={15} /></button>
               <button type="button" class="btn icon sm ghost" title={orderHint ? undefined : 'Load later'} aria-label="Load {e.manifest?.name ?? e.id} later" disabled={!e.enabled || stepTarget(data.entries, e.id, 1) === null} onclick={() => step(e, 1)}><Icon name="down" size={15} /></button>
             </span>
-            <button type="button" class="btn icon sm ghost danger-hover" title="Remove from the cache" aria-label="Remove {e.id} {e.version} from the cache" onclick={() => remove(e)}><Icon name="trash" size={14} /></button>
+            <button type="button" class="btn icon sm ghost danger-hover" title="Remove from the cache" aria-label="Remove {e.manifest?.name ?? e.id} {e.version} from the cache" onclick={() => remove(e)}><Icon name="trash" size={14} /></button>
           </div>
         </li>
       {/each}

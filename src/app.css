@@ -32,6 +32,8 @@ ul, ol { margin: 0; }
 .grow { flex: 1 1 auto; min-width: 0; }
 .num { text-align: right; font-variant-numeric: tabular-nums; }
 .check:has(input:disabled) { opacity: 0.55; cursor: not-allowed; }
+/* A disabled box that is ticked still says "on": keep it readable. */
+input[type='checkbox']:disabled:checked { opacity: 0.7; }
 .dot-state { width: 8px; height: 8px; border-radius: 50%; background: var(--faint); flex: none; transition: background var(--dur) var(--ease); }
 .dot-state.on { background: var(--ok); box-shadow: 0 0 8px var(--ok); }
 .dot-state.warm { background: var(--warn); }

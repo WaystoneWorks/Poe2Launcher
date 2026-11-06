@@ -138,7 +138,7 @@
   }
 </script>
 
-<PageHead icon="settings" title="Settings" />
+<PageHead icon="settings" title="Settings" sub="Launcher, game, Steam and mod options" />
 
 <Tabs {tabs} value={tab} label="Settings" panel="settings-panel" onchange={(id) => router.go('settings', { tab: id === 'general' ? undefined : id })} />
 
