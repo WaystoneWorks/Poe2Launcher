@@ -50,7 +50,7 @@
   {#each filters as f (f.id)}
     {@const count = f.id === 'all' ? items.length : items.filter((n) => n.source === f.id).length}
     <button type="button" class:on={filter === f.id} role="radio" aria-checked={filter === f.id} disabled={count === 0 && f.id !== 'all'} onclick={() => (filter = f.id)}>
-      {f.label}{#if f.id !== 'all'} <span class="n">{count}</span>{/if}
+      {f.label}{#if f.id !== 'all'} <span class="n" aria-hidden="true">{count}</span><span class="sr-only">({count})</span>{/if}
     </button>
   {/each}
 </div>

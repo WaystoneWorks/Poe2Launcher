@@ -7,7 +7,7 @@
    * `panel` is the id of the element that shows the selected tab's content: it gets
    * `role="tabpanel"` and `aria-labelledby={tabId(panel, value)}` from the page.
    */
-  let { tabs, value, onchange, label = 'Sections', panel }: { tabs: Tab[]; value: string; onchange: (id: string) => void; label?: string; panel?: string } = $props();
+  let { tabs, value, onchange, label = 'Sections', panel, sub = false }: { tabs: Tab[]; value: string; onchange: (id: string) => void; label?: string; panel?: string; sub?: boolean } = $props();
   let list: HTMLElement | undefined = $state();
 
   async function key(e: KeyboardEvent, i: number) {
@@ -30,7 +30,7 @@
   }
 </script>
 
-<div class="seg tabs" role="tablist" aria-label={label} bind:this={list}>
+<div class="seg tabs" class:sub role="tablist" aria-label={label} bind:this={list}>
   {#each tabs as t, i (t.id)}
     <button
       type="button"

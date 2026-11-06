@@ -253,7 +253,7 @@
             {#if hostTask[hosted.id] === 'start'}<Spinner size={12} />{/if} Start
           </button>
         {/if}
-        {#if !selected}<button type="button" class="btn sm" onclick={() => app.select(p.id)}
+        {#if !selected}<button type="button" class="btn sm" aria-describedby={compat.kind === 'other' || compat.kind === 'unsupported' ? `compat-${p.id}` : undefined} onclick={() => app.select(p.id)}
           title={compat.kind === 'other' ? `Play needs ${compat.version}: switch the game version first` : compat.kind === 'unsupported' ? 'This launcher cannot play on it' : undefined}>Select</button>{/if}
         <button type="button" class="btn sm icon ghost" aria-expanded={isOpen(p)} aria-label="Details of {p.name}" title="Details, web admin, edit" onclick={() => (open[p.id] = !isOpen(p))}>
           <Icon name="chevron" size={15} class={isOpen(p) ? 'flip' : ''} />
@@ -262,10 +262,10 @@
     </div>
     {#if p.keyring_error}<p class="err">{p.keyring_error}</p>{/if}
     {#if compat.kind === 'other'}
-      <p class="srv-warn"><Icon name="alert" size={13} /> This server runs client {compat.version}, you have {app.version} selected.
+      <p class="srv-warn" id="compat-{p.id}"><Icon name="alert" size={13} /> This server runs client {compat.version}, you have {app.version} selected.
         <button type="button" class="link" onclick={() => app.switchVersion(compat.version)}>Switch to {compat.version}</button></p>
     {:else if compat.kind === 'unsupported'}
-      <p class="srv-warn"><Icon name="alert" size={13} /> This server runs client {compat.version}, which this launcher does not support. Update the launcher or the server.</p>
+      <p class="srv-warn" id="compat-{p.id}"><Icon name="alert" size={13} /> This server runs client {compat.version}, which this launcher does not support. Update the launcher or the server.</p>
     {/if}
     {#if isOpen(p)}
       <div class="srv-more" transition:slide={{ duration: ms(DUR.slow), easing: ease }}>

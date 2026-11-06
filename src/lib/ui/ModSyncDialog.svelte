@@ -46,7 +46,7 @@
             <div class="grow">
               <strong>{m.name}</strong> <span class="muted">{m.version}</span>
               <Chip tone={side.tone}>{side.text}</Chip>
-              {#if m.code}<Chip tone="warn" icon="alert">contains code</Chip>{:else}<Chip>data only</Chip>{/if}
+              {#if m.code}<Chip tone="warn" icon="alert">contains code</Chip>{/if}
               {#if m.state === 'changed'}<Chip tone="warn">replaces a cached copy</Chip>{/if}
               <div class="meta">
                 <code>{m.id}</code> · {formatBytes(m.size)}{#if m.authors.length}{' · ' + m.authors.join(', ')}{/if}

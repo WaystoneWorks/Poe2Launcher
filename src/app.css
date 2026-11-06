@@ -114,6 +114,8 @@ input[type='radio'] { accent-color: var(--gold); }
 .switch-text small { display: block; color: var(--muted); font-size: 12px; }
 
 .field { display: flex; flex-direction: column; gap: 6px; margin-bottom: 14px; }
+/* The Dropdown's `field` variant is not a form field wrapper. */
+.dd.field { margin-bottom: 0; }
 .field > span:first-child { font-size: var(--fs-sm); color: var(--muted); font-weight: 550; }
 .field input, .field select { width: 100%; }
 .check { display: inline-flex; align-items: flex-start; gap: 10px; cursor: pointer; line-height: 1.4; }
@@ -350,6 +352,12 @@ main.play-main { background:
 .seg button.on { color: var(--gold-2); }
 .seg button.on::after { transform: scaleX(1); }
 .seg button:disabled { opacity: 0.4; cursor: not-allowed; }
+/* Tabs inside a tab (Library > Mods): smaller, so the hierarchy reads. */
+.seg.sub { gap: var(--sp-4); margin-bottom: 14px; border-bottom-color: var(--line-soft); }
+.seg.sub button { font-size: var(--fs-sm); padding-bottom: 7px; }
+/* One control height in filter toolbars. */
+.toolbar .pills button { min-height: 36px; }
+.toolbar .btn.icon { width: 36px; min-height: 36px; }
 
 .depot-list { list-style: none; padding: 0; display: grid; gap: var(--sp-2); }
 .depot-list li { display: flex; align-items: center; gap: 10px; padding: 8px 12px; border-radius: var(--radius); background: var(--bg-2); border: 1px solid var(--line-soft); font-size: var(--fs-sm); flex-wrap: wrap; }

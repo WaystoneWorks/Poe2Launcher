@@ -49,6 +49,7 @@
   ]}
   value={view}
   panel="mods-panel"
+  sub
   label="Mods"
   onchange={(id) => setView(id as 'installed' | 'browse')}
 />

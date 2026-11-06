@@ -80,7 +80,7 @@
 </script>
 
 <div class="browse">
-  <div class="bar">
+  <div class="bar toolbar">
     <label class="search">
       <Icon name="search" size={15} />
       <input type="search" placeholder="Search servers" disabled={noList} bind:value={filter.search} aria-label="Search the server list" />
@@ -102,10 +102,6 @@
       </div>
     {/if}
     <label class="check"><input type="checkbox" disabled={noList} bind:checked={filter.onlineOnly} /> <span>Online only</span></label>
-    <span class="grow"></span>
-    {#if !noList}<button type="button" class="btn" onclick={() => load(true)} disabled={loading || probing}>
-      {#if loading || probing}<Spinner size={13} />{:else}<Icon name="refresh" size={14} />{/if} Refresh
-    </button>{/if}
   </div>
 
   <div class="meta hint">
@@ -116,6 +112,9 @@
     {/if}
     <span class="grow"></span>
     {#if list && list.fetched_at > 0}<span>List updated {formatAgo(list.fetched_at)}</span>{/if}
+    {#if !noList}<button type="button" class="btn sm" onclick={() => load(true)} disabled={loading || probing}>
+      {#if loading || probing}<Spinner size={13} />{:else}<Icon name="refresh" size={14} />{/if} Refresh
+    </button>{/if}
   </div>
 
   {#if list?.offline}
@@ -208,7 +207,7 @@
 <style>
   .leagues-toggle { align-self: flex-start; font-size: 12.5px; }
   .bar { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 14px; margin-bottom: 10px; }
-  .search { display: flex; align-items: center; gap: 8px; flex: 1 1 260px; min-width: 200px; min-height: 36px; padding: 0 10px; border: 1px solid var(--line); border-radius: var(--radius-sm); background: var(--bg-2); color: var(--muted); }
+  .search { display: flex; align-items: center; gap: 8px; flex: 1 1 260px; min-width: 200px; height: 36px; padding: 0 10px; border: 1px solid var(--line); border-radius: var(--radius-sm); background: var(--bg-2); color: var(--muted); }
   .search input { border: 0; background: transparent; padding: 6px 0; box-shadow: none; flex: 1; min-width: 0; }
   .search:focus-within { border-color: var(--accent); }
   .sel { display: flex; align-items: center; gap: 6px; font-size: 12.5px; color: var(--muted); }

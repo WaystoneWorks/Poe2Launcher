@@ -176,7 +176,7 @@
             checked={e.enabled || e.required || viaAll}
             disabled={!isValid(e) || e.required || viaAll}
             title={e.required ? 'Required by the server' : viaAll ? 'On for all servers; untick "all servers" to choose per server' : undefined}
-            aria-label="Enable {e.id} for {data.scope_name}"
+            aria-label="Enable {e.manifest?.name ?? e.id} for {data.scope_name}"
             onchange={(ev) => setEnabled(e, ev.currentTarget.checked)}
           />
           <div>
@@ -200,16 +200,17 @@
               {/if}
               <span class="faint"> · {formatBytes(e.size)}, from {e.source}{e.server_half_left_out ? ', client half only' : ''}</span>
             </div>
+            {#if viaAll}<p class="hint row-note">On for all servers: untick "all servers" to choose for {data.scope_name} only.</p>{/if}
             {#if e.errors.length}<ul class="errs">{#each e.errors as er}<li>{er}</li>{/each}</ul>{/if}
           </div>
           <div class="row">
             {#if !isAll && isValid(e) && !e.required}
-              <label class="allsw" title="Also load it on every server"><input type="checkbox" checked={e.enabled_all} aria-label="Enable {e.id} on all servers" onchange={(ev) => setEnabled(e, ev.currentTarget.checked, SCOPE_ALL)} /> all servers</label>
+              <label class="allsw" title="Also load it on every server"><input type="checkbox" checked={e.enabled_all} aria-label="Enable {e.manifest?.name ?? e.id} on all servers" onchange={(ev) => setEnabled(e, ev.currentTarget.checked, SCOPE_ALL)} /> all servers</label>
             {/if}
             <!-- Always there (disabled when it does not apply) so the rows line up. -->
             <span class="order" title={orderHint || undefined}>
-              <button type="button" class="btn icon sm ghost" title={orderHint ? undefined : 'Load earlier'} aria-label="Load {e.id} earlier" disabled={!e.enabled || stepTarget(data.entries, e.id, -1) === null} onclick={() => step(e, -1)}><Icon name="up" size={15} /></button>
-              <button type="button" class="btn icon sm ghost" title={orderHint ? undefined : 'Load later'} aria-label="Load {e.id} later" disabled={!e.enabled || stepTarget(data.entries, e.id, 1) === null} onclick={() => step(e, 1)}><Icon name="down" size={15} /></button>
+              <button type="button" class="btn icon sm ghost" title={orderHint ? undefined : 'Load earlier'} aria-label="Load {e.manifest?.name ?? e.id} earlier" disabled={!e.enabled || stepTarget(data.entries, e.id, -1) === null} onclick={() => step(e, -1)}><Icon name="up" size={15} /></button>
+              <button type="button" class="btn icon sm ghost" title={orderHint ? undefined : 'Load later'} aria-label="Load {e.manifest?.name ?? e.id} later" disabled={!e.enabled || stepTarget(data.entries, e.id, 1) === null} onclick={() => step(e, 1)}><Icon name="down" size={15} /></button>
             </span>
             <button type="button" class="btn icon sm ghost danger-hover" title="Remove from the cache" aria-label="Remove {e.id} {e.version} from the cache" onclick={() => remove(e)}><Icon name="trash" size={14} /></button>
           </div>
@@ -230,4 +231,5 @@
   .allsw { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: var(--muted); cursor: pointer; }
   .cachehint { margin-top: 16px; }
   .faint { color: var(--faint); }
+  .row-note { margin: 2px 0 0; }
 </style>

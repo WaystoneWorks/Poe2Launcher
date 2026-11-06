@@ -67,7 +67,7 @@
   }
 </script>
 
-<div class="bar">
+<div class="bar toolbar">
   <label class="search">
     <Icon name="search" size={15} />
     <input type="search" placeholder="Search mods" title="Searches name, description, author and tags" bind:value={filter.query} aria-label="Search mods by name, description, author or tag" />
@@ -168,7 +168,7 @@
 
 <style>
   .bar { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 14px; margin: 14px 0 10px; }
-  .search { display: flex; align-items: center; gap: 8px; flex: 1 1 180px; min-width: 0; min-height: 36px; padding: 0 10px; border: 1px solid var(--line); border-radius: var(--radius-sm); background: var(--bg-2); color: var(--muted); }
+  .search { display: flex; align-items: center; gap: 8px; flex: 1 1 180px; min-width: 0; height: 36px; padding: 0 10px; border: 1px solid var(--line); border-radius: var(--radius-sm); background: var(--bg-2); color: var(--muted); }
   .search input { border: 0; background: transparent; padding: 6px 0; flex: 1; min-width: 0; box-shadow: none !important; }
   .bar :global(.dd-trigger) { min-width: 120px; }
   .sel { display: flex; align-items: center; gap: 6px; font-size: 12.5px; color: var(--muted); }
