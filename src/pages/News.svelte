@@ -83,11 +83,11 @@
         <div class="post-foot">
           {#if preview.more || open}
             <button type="button" class="link" aria-expanded={open} onclick={() => (expanded[n.id] = !open)}>
-              {open ? 'Show less' : 'Read more'} <Icon name="chevron" size={12} class={open ? 'flip' : ''} />
+              <span>{open ? 'Show less' : 'Read more'}</span><span class="sr-only"> of {n.title}</span> <Icon name="chevron" size={12} class={open ? 'flip' : ''} />
             </button>
           {/if}
           {#if n.link}
-            <button type="button" class="link quiet" onclick={() => link(n.link!)}>Open the link <Icon name="external" size={12} /></button>
+            <button type="button" class="link quiet" aria-label="Open the link of {n.title} (external)" onclick={() => link(n.link!)}>Open the link <Icon name="external" size={12} /></button>
           {/if}
         </div>
       </article>
@@ -99,13 +99,14 @@
   .chips { display: flex; gap: var(--sp-2); flex-wrap: wrap; margin-bottom: var(--sp-5); }
   .fchip { padding: 5px 13px; border: 1px solid var(--line); border-radius: var(--radius-pill); background: none; color: var(--muted); font: 500 var(--fs-sm) / 1.4 var(--font); cursor: pointer; transition: border-color var(--dur) var(--ease), color var(--dur) var(--ease), background var(--dur) var(--ease); }
   .fchip:hover:not(:disabled) { color: var(--text); border-color: color-mix(in srgb, var(--gold) 40%, var(--line)); }
+  .fchip .n { margin-left: 6px; font-size: 11px; padding: 0 6px; border-radius: 99px; background: var(--surface-3); font-variant-numeric: tabular-nums; }
   .fchip.on { border-color: var(--gold); color: var(--gold-2); background: color-mix(in srgb, var(--gold) 8%, transparent); }
   .fchip:disabled { opacity: 0.45; cursor: default; }
   .fchip .n { font-size: 11px; color: var(--faint); margin-left: 2px; }
-  .feed { max-width: 780px; display: flex; flex-direction: column; gap: var(--sp-4); }
+  .feed { max-width: var(--read-w); display: flex; flex-direction: column; gap: var(--sp-4); }
   .post { border: 1px solid var(--line); border-radius: var(--radius-lg); background: var(--surface); padding: var(--sp-5) var(--sp-5) var(--sp-4); display: flex; flex-direction: column; gap: var(--sp-2); }
   .post.pin { border-color: color-mix(in srgb, var(--gold) 50%, var(--line)); background: linear-gradient(90deg, color-mix(in srgb, var(--crimson) 22%, var(--surface)), var(--surface)); }
-  .meta { display: flex; align-items: center; gap: var(--sp-3); font-size: 10.5px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--faint); }
+  .meta { display: flex; align-items: center; gap: var(--sp-3); font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--faint); }
   .pin-chip { display: inline-flex; align-items: center; gap: 5px; padding: 1px 8px; border: 1px solid color-mix(in srgb, var(--gold) 50%, var(--line)); border-radius: var(--radius-pill); color: var(--gold-2); letter-spacing: 0.06em; }
   .title { font: 600 var(--fs-lg) / 1.3 var(--font-head); letter-spacing: 0.05em; text-transform: none; color: var(--text); margin: 0; }
   .post.open .title { color: var(--gold-2); }

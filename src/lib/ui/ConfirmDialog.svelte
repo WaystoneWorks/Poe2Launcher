@@ -8,11 +8,16 @@
   const c = $derived(confirmer.current);
   const ok = $derived(!!c && (!c.acknowledge || ticked) && (!c.typeToConfirm || typed === c.typeToConfirm));
 
+  // A new question starts unticked and empty, also when it replaces one that is still open.
+  $effect.pre(() => {
+    void c;
+    ticked = false;
+    typed = '';
+  });
+
   $effect(() => {
     if (!dialog) return;
     if (c && !dialog.open) {
-      ticked = false;
-      typed = '';
       dialog.showModal();
     } else if (!c && dialog.open) {
       dialog.close();
@@ -40,7 +45,7 @@
         <h2 id="confirm-title">{c.title}</h2>
       </div>
       <div id="confirm-msg" class="dialog-msg">
-        {#each c.message.split('\n\n') as para (para)}<p>{para}</p>{/each}
+        {#each c.message.split('\n\n') as para, i (i)}<p>{para}</p>{/each}
       </div>
       {#if c.typeToConfirm}
         <label class="field">

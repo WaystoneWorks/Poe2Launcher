@@ -93,5 +93,7 @@ describe('news previews', () => {
     expect(p.text.endsWith('word…')).toBe(true);
     expect(p.text.length).toBeLessThanOrEqual(51);
     expect(newsPreview('')).toEqual({ text: '', more: false });
+    expect(plainText('# New\n\n- a\n- b\n\nSee the guide.')).toBe('New. a, b. See the guide.');
+    expect(plainText('- Servers > Browse\n- Logs and backups are new')).toBe('Servers > Browse. Logs and backups are new');
   });
 });

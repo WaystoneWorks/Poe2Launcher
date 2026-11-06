@@ -89,6 +89,8 @@
           <small>Steam login and the original realms. The hook only watches.</small>
         </span>
       </div>
+    {:else if !sel && app.profiles.length === 0}
+      <!-- The setup checklist above already asks for a server. -->
     {:else if !sel}
       <div class="server-plate empty">
         <span class="plate-text">
@@ -100,11 +102,11 @@
     {:else}
       <Dropdown items={serverItems} value={sel.id} label="Server" variant="plate" onselect={pick}>
         {#snippet trigger()}
-          <span class="dot-state" class:on={!!ok} class:bad={typeof info === 'string'}></span>
+          <span class="dot-state" class:on={!!ok} class:bad={typeof info === 'string'} aria-hidden="true"></span>
           <span class="plate-text">
-            <b>{ok?.name ?? sel.name}</b>
+            <b>{sel.name}</b>
             <small>
-              {#if ok}{ok.online} online{ping !== undefined ? ` · ${ping} ms` : ''}
+              {#if ok}{ok.name && ok.name !== sel.name ? `${ok.name} · ` : ''}{ok.online} online{ping !== undefined ? ` · ${ping} ms` : ''}
               {:else if typeof info === 'string'}unreachable
               {:else}<Spinner size={10} /> checking{/if}
             </small>
@@ -114,7 +116,7 @@
       </Dropdown>
     {/if}
 
-    <div class="ornament" aria-hidden="true"><span class="gem"></span></div>
+    {#if app.official || sel || app.profiles.length > 0}<div class="ornament" aria-hidden="true"><span class="gem"></span></div>{/if}
 
     <button
       type="button"
@@ -175,9 +177,6 @@
   .plate-text b { font-size: var(--fs-md); font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .plate-text small { display: flex; align-items: center; gap: 6px; font-size: 11.5px; color: var(--muted); }
   .plate-change { font-size: var(--fs-xs); color: var(--gold); }
-  .dot-state { width: 8px; height: 8px; border-radius: 50%; background: var(--faint); flex: none; transition: background var(--dur) var(--ease); }
-  .dot-state.on { background: var(--ok); box-shadow: 0 0 8px var(--ok); }
-  .dot-state.bad { background: var(--danger); }
 
   .ornament { display: flex; align-items: center; gap: 10px; width: 340px; color: var(--gold); }
   .ornament::before, .ornament::after { content: ''; flex: 1; height: 1px; background: linear-gradient(90deg, transparent, var(--gold)); }
@@ -193,8 +192,10 @@
   }
   .play-btn:hover:not(:disabled) { filter: brightness(1.12); box-shadow: 0 12px 44px rgb(209 161 78 / 0.32), inset 0 1px 0 rgb(255 255 255 / 0.22); }
   .play-btn:active:not(:disabled) { transform: translateY(1px); }
-  .play-btn:disabled { cursor: not-allowed; opacity: 0.5; box-shadow: none; filter: saturate(0.4); }
-  .play-btn:disabled:has(:global(.spinner)) { opacity: 0.9; filter: none; }
+  /* Blocked: a neutral, clearly inactive button (the reason is written below it). */
+  .play-btn:disabled { cursor: not-allowed; background: var(--surface-2); border-color: var(--line); color: var(--muted); box-shadow: none; }
+  /* Busy (deploying, starting): it keeps its colour with a spinner. */
+  .play-btn:disabled:has(:global(.spinner)) { background: var(--play-bg); border-color: var(--gold); color: var(--on-crimson); opacity: 0.9; }
 
   .play-state { margin: 0; min-height: 22px; display: flex; align-items: center; justify-content: center; flex-wrap: wrap; gap: 6px 10px; font-size: var(--fs-sm); color: var(--muted); text-align: center; max-width: 520px; }
   .play-state.blocked { color: var(--warn); }

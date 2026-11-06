@@ -88,8 +88,8 @@
     switch (e.key) {
       case 'ArrowDown': e.preventDefault(); step(1); break;
       case 'ArrowUp': e.preventDefault(); step(-1); break;
-      case 'Home': e.preventDefault(); active = 0; break;
-      case 'End': e.preventDefault(); active = items.length - 1; break;
+      case 'Home': e.preventDefault(); active = items.length - 1; step(1); break;
+      case 'End': e.preventDefault(); active = 0; step(-1); break;
       case 'Enter': case ' ': e.preventDefault(); { const i = items[active]; if (i) choose(i); } break;
       case 'Escape': e.preventDefault(); close(); break;
       case 'Tab': close(false); break;
@@ -112,7 +112,7 @@
     aria-haspopup="listbox"
     aria-expanded={open}
     aria-controls={open ? uid : undefined}
-    aria-label={label}
+    aria-label={current ? `${label}: ${current.label}` : label}
     onclick={() => (open ? close() : show())}
     onkeydown={(e) => {
       if (!open && (e.key === 'ArrowDown' || e.key === 'ArrowUp')) {

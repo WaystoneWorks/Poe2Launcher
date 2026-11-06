@@ -81,10 +81,10 @@
   const toolPct = $derived(ins.tool && ins.tool.total > 0 ? (ins.tool.done / ins.tool.total) * 100 : 0);
   const label = $derived(versionLabel(app.version));
   // The Steam form is only in the way once the game is installed: it opens by itself when it
-  // is needed (nothing installed, a download running or paused).
+  // is needed (nothing installed and no download running, or a paused download).
   let steamOpen = $state(false);
   $effect(() => {
-    if (!st?.installed || active || paused) steamOpen = true;
+    if ((!st?.installed && !active) || paused) steamOpen = true;
   });
   let detailsOpen = $state(false);
 </script>
@@ -189,7 +189,7 @@
 
   <HookPanel compact />
 
-  <Fold title="Download or repair from Steam" bind:open={steamOpen} summary={st?.installed ? 'only needed to repair or update' : 'needed to install the game'}>
+  <Fold title="Download or repair from Steam" bind:open={steamOpen} summary={active ? 'a download is running' : st?.installed ? 'only needed to repair or update' : 'needed to install the game'}>
     <p class="hint">
       The launcher downloads the game with DepotDownloader {st?.tool_version ?? ''} using <b>your own Steam login</b>, into its own folder.
       It never touches the Steam install of the game. Your password is passed to the downloader once and is not stored.
@@ -252,9 +252,9 @@
 </div>
 
 <style>
-  .col { max-width: 820px; display: flex; flex-direction: column; gap: var(--sp-4); }
+  .col { max-width: var(--read-w); display: flex; flex-direction: column; gap: var(--sp-4); }
   .col > :global(.card) { margin: 0; }
-  .official { margin-bottom: var(--sp-4); max-width: 820px; }
+  .official { margin-bottom: var(--sp-4); max-width: var(--read-w); }
   .status-row { display: flex; align-items: center; gap: var(--sp-4); }
   .status-icon { flex: none; width: 46px; height: 46px; border-radius: 50%; display: grid; place-items: center; background: var(--surface-3); color: var(--muted); }
   .status.ok .status-icon { background: color-mix(in srgb, var(--ok) 18%, transparent); color: var(--ok); }

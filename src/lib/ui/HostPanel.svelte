@@ -10,10 +10,10 @@
   import { RateTracker } from '../rate.svelte';
   import { ask } from '../confirm.svelte';
   import {
-    formFromSettings, isUp, logLevel, playerAddress, portsToForward, pushLog, runLabel, settingsFromForm,
+    formFromSettings, isUp, logLevel, playerAddress, portsToForward, pushLog, runChip, runLabel, settingsFromForm,
     updateHeadline, updatePlan, validateHostForm, type HostForm,
   } from '../host';
-  import Tabs from './Tabs.svelte';
+  import Tabs, { tabId } from './Tabs.svelte';
   import Icon from './Icon.svelte';
   import Chip from './Chip.svelte';
   import Spinner from './Spinner.svelte';
@@ -357,13 +357,13 @@
 {#if status && !status.platform.match(/^(linux|windows)$/)}
   <p class="muted">Hosting from the launcher works on Linux and Windows only.</p>
 {:else if status && form}
-  <Tabs {tabs} value={shown} label="Your server" onchange={(v) => (view = v as View)} />
-  <div class="stack">
+  <Tabs {tabs} value={shown} label="Your server" panel="host-panel" onchange={(v) => (view = v as View)} />
+  <div class="stack" id="host-panel" role="tabpanel" aria-labelledby={tabId('host-panel', shown)}>
     {#if shown === 'run'}
       <section class="card">
         <div class="runbar">
           <Chip tone={ready ? 'ok' : up ? 'warn' : run_.state === 'exited' && run_.code !== 0 && run_.code !== null ? 'bad' : 'neutral'} dot>
-            {runLabel(run_, ready)}
+            <span title={runLabel(run_, ready)}>{runChip(run_, ready)}</span>
           </Chip>
           {#if status.info}<span class="muted">{status.info.online} online</span>{/if}
           <span class="grow"></span>
@@ -373,7 +373,7 @@
           {#if up}
             <button type="button" class="btn danger" disabled={task === 'stop' || run_.state === 'stopping'} onclick={stop}>{#if task === 'stop'}<Spinner size={13} />{/if} Stop</button>
           {:else}
-            <button type="button" class="btn primary" disabled={!configured || task !== '' || noGame} onclick={start}>{#if task === 'start'}<Spinner size={13} />{/if} Start</button>
+            <button type="button" class="btn" disabled={!configured || task !== '' || noGame} onclick={start}>{#if task === 'start'}<Spinner size={13} />{/if} Start</button>
           {/if}
         </div>
         {#if !configured}

@@ -36,7 +36,7 @@
       <div class="grow slim-text">
         <b>Client hook</b>
         <span class="muted">
-          {#if downloaded && h?.installed}{h.installed.version} for {h.installed.game_versions.join(', ')}{#if check && check.release.version !== h.installed.version} · newest {check.release.version}{/if}
+          {#if downloaded && h?.installed}For client {h.installed.game_versions.join(', ')}{#if check && check.release.version !== h.installed.version} · newest {check.release.version}{/if}
           {:else}{sum.detail || 'The DLLs that connect the game to a private server.'}{/if}
         </span>
       </div>
@@ -112,7 +112,7 @@
   .slim-row { display: flex; align-items: center; gap: var(--sp-3); flex-wrap: wrap; }
   .slim-row .head-icon { color: var(--gold); display: grid; place-items: center; }
   .slim-text { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
-  .slim-text b { font-weight: 600; }
+  .slim-text b { font: 600 14px / 1.3 var(--font-head); letter-spacing: 0.06em; }
   .slim-text .muted { font-size: var(--fs-sm); }
   .slim-err { margin: var(--sp-3) 0 0; }
   .hook-prog { grid-template-columns: minmax(120px, 1fr) minmax(0, 2fr) 64px; margin-top: 8px; }

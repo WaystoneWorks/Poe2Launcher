@@ -76,6 +76,8 @@ pub struct ModEntry {
     pub origin: Option<Origin>,
     /// Position in the load order.
     pub order: Option<usize>,
+    /// Position among the scope's enabled mods (what `mod_move` takes); None when not enabled here.
+    pub pin_index: Option<usize>,
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -267,6 +269,9 @@ impl Core {
                     in_effect: member.is_some(),
                     origin: member.map(|m| m.1),
                     order: member.map(|m| m.0),
+                    pin_index: scope_pins
+                        .iter()
+                        .position(|p| p.id == c.meta.id && p.version == c.meta.version),
                 }
             })
             .collect();

@@ -13,6 +13,7 @@
     type BrowseFilter, type SortKey,
   } from '../browse';
   import Icon from './Icon.svelte';
+  import Dropdown from './Dropdown.svelte';
   import Chip from './Chip.svelte';
   import Empty from './Empty.svelte';
   import Spinner from './Spinner.svelte';
@@ -73,50 +74,43 @@
     }
   }
 
-  function setSort(e: Event) {
-    filter.sort = (e.currentTarget as HTMLSelectElement).value as SortKey;
-  }
+  /** Nothing to search or sort while the list could not be loaded. */
+  const noList = $derived(servers.length === 0 && !!list?.offline);
+
 </script>
 
 <div class="browse">
   <div class="bar">
     <label class="search">
       <Icon name="search" size={15} />
-      <input type="search" placeholder="Search servers" bind:value={filter.search} aria-label="Search the server list" />
+      <input type="search" placeholder="Search servers" disabled={noList} bind:value={filter.search} aria-label="Search the server list" />
     </label>
-    <label class="sel"><span>Sort</span>
-      <select value={filter.sort} onchange={setSort} aria-label="Sort by">
-        <option value="players">Players</option>
-        <option value="ping">Ping</option>
-        <option value="name">Name</option>
-      </select>
-    </label>
+    <div class="sel"><span aria-hidden="true">Sort</span>
+      <Dropdown label="Sort by" disabled={noList} value={filter.sort} onselect={(v) => (filter.sort = v as SortKey)}
+        items={[{ value: 'players', label: 'Players' }, { value: 'ping', label: 'Ping' }, { value: 'name', label: 'Name' }]} />
+    </div>
     {#if regions.length > 1}
-      <label class="sel"><span>Region</span>
-        <select bind:value={filter.region} aria-label="Region">
-          <option value={null}>All</option>
-          {#each regions as r (r)}<option value={r}>{r}</option>{/each}
-        </select>
-      </label>
+      <div class="sel"><span aria-hidden="true">Region</span>
+        <Dropdown label="Region" disabled={noList} value={filter.region ?? ''} onselect={(v) => (filter.region = v || null)}
+          items={[{ value: '', label: 'All' }, ...regions.map((r) => ({ value: r, label: r }))]} />
+      </div>
     {/if}
     {#if tags.length > 0}
-      <label class="sel"><span>Tag</span>
-        <select bind:value={filter.tag} aria-label="Tag">
-          <option value={null}>All</option>
-          {#each tags as t (t)}<option value={t}>{t}</option>{/each}
-        </select>
-      </label>
+      <div class="sel"><span aria-hidden="true">Tag</span>
+        <Dropdown label="Tag" disabled={noList} value={filter.tag ?? ''} onselect={(v) => (filter.tag = v || null)}
+          items={[{ value: '', label: 'All' }, ...tags.map((t) => ({ value: t, label: t }))]} />
+      </div>
     {/if}
-    <label class="check"><input type="checkbox" bind:checked={filter.onlineOnly} /> <span>Online only</span></label>
+    <label class="check"><input type="checkbox" disabled={noList} bind:checked={filter.onlineOnly} /> <span>Online only</span></label>
     <span class="grow"></span>
-    <button type="button" class="btn" onclick={() => load(true)} disabled={loading || probing}>
+    {#if !noList}<button type="button" class="btn" onclick={() => load(true)} disabled={loading || probing}>
       {#if loading || probing}<Spinner size={13} />{:else}<Icon name="refresh" size={14} />{/if} Refresh
-    </button>
+    </button>{/if}
   </div>
 
   <div class="meta hint">
     {#if version}
-      <label class="check"><input type="checkbox" bind:checked={allVersions} /> <span>Show other game versions too (you have {versionLabel(version)} selected)</span></label>
+      <label class="check"><input type="checkbox" disabled={noList} bind:checked={allVersions} /> <span>Show other game versions too (you have {versionLabel(version)} selected)</span></label>
     {:else}
       <span>Official (read-only) is selected: private servers are not played from here, all versions are shown.</span>
     {/if}
@@ -126,8 +120,10 @@
 
   {#if list?.offline}
     <div class="notice" role="status">
-      <span class="notice-title"><Icon name="alert" size={16} /> {servers.length > 0 ? 'Showing the saved list' : 'The server list could not be loaded'}</span>
-      <p>{list.error || 'No connection.'}</p>
+      <span class="notice-title"><Icon name="alert" size={16} /> {servers.length > 0 ? 'Showing the saved list: the public server list could not be reached' : 'Could not reach the public server list'}</span>
+      <p>Check the internet connection, then try again.</p>
+      {#if list.error}<p class="hint">{list.error}</p>{/if}
+      <button type="button" class="btn sm retry" onclick={() => load(true)} disabled={loading || probing}><Icon name="refresh" size={13} /> Try again</button>
     </div>
   {/if}
   {#if list && list.skipped.length > 0}
@@ -139,9 +135,11 @@
 
   {#if loading && !list}
     <div class="loading-row"><Spinner size={18} /> Loading the list...</div>
+  {:else if servers.length === 0 && list?.offline}
+    <!-- the notice above says why the list is empty -->
   {:else if servers.length === 0}
     <Empty icon="compass" title="No public servers listed yet">
-      Public servers are added to the list by pull request to <b>{app.info?.server_list_label ?? 'the server list repository'}</b>. Until then, add a friend's server by address under <a href="#/servers">My servers</a>, or <a href="#/servers?host=1">create your own</a>.
+      Public servers are added to the list by pull request to <b>{app.info?.server_list_label ?? 'the server list repository'}</b>. Until then, add a friend's server by address under <a href="#/servers">My servers</a>, or <a href="#/servers?tab=host&create=1">create your own</a>.
     </Empty>
   {:else if shown.length === 0}
     <Empty icon="search" title="No server matches">
@@ -185,19 +183,18 @@
             {/if}
           {/if}
           {#if s.mods.length > 0}
-            <p class="hint">Needs mods: {s.mods.map((m) => (m.version ? `${m.id} ${m.version}` : m.id)).join(', ')}. The launcher does not install or sync mods for servers yet.</p>
+            <p class="hint">Needs mods: {s.mods.map((m) => (m.version ? `${m.id} ${m.version}` : m.id)).join(', ')}. The launcher downloads them when you play here.</p>
           {/if}
           <div class="foot">
-            <span class="hint contact">
-              {#if contact}<button type="button" class="link" onclick={() => run(() => ipc.openLink(contact))}>{contact}</button>
-              {:else if s.contact}{s.contact}{/if}
-            </span>
-            <span class="grow"></span>
-            <code class="addr">{s.address}</code>
+            <div class="foot-info">
+              <code class="addr">{s.address}</code>
+              {#if contact}<button type="button" class="link hint contact" onclick={() => run(() => ipc.openLink(contact))}>{contact}</button>
+              {:else if s.contact}<span class="hint contact">{s.contact}</span>{/if}
+            </div>
             {#if mine}
               <Chip tone="ok" icon="check">in your servers</Chip>
             {:else}
-              <button type="button" class="btn primary sm" disabled={adding === s.id} onclick={() => add(s)}>
+              <button type="button" class="btn sm" disabled={adding === s.id} onclick={() => add(s)}>
                 {#if adding === s.id}<Spinner size={12} />{:else}<Icon name="plus" size={13} />{/if} Add to my servers
               </button>
             {/if}
@@ -211,11 +208,12 @@
 <style>
   .leagues-toggle { align-self: flex-start; font-size: 12.5px; }
   .bar { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 14px; margin-bottom: 10px; }
-  .search { display: flex; align-items: center; gap: 8px; flex: 1 1 260px; min-width: 200px; padding: 0 10px; border: 1px solid var(--line); border-radius: var(--radius-sm); background: var(--bg-2); color: var(--muted); }
-  .search input { border: 0; background: transparent; padding: 8px 0; box-shadow: none; flex: 1; min-width: 0; }
+  .search { display: flex; align-items: center; gap: 8px; flex: 1 1 260px; min-width: 200px; min-height: 36px; padding: 0 10px; border: 1px solid var(--line); border-radius: var(--radius-sm); background: var(--bg-2); color: var(--muted); }
+  .search input { border: 0; background: transparent; padding: 6px 0; box-shadow: none; flex: 1; min-width: 0; }
   .search:focus-within { border-color: var(--accent); }
   .sel { display: flex; align-items: center; gap: 6px; font-size: 12.5px; color: var(--muted); }
-  .sel select { width: auto; }
+  .sel :global(.dd-trigger) { min-width: 110px; }
+  .bar .check, .meta .check { font-size: 12.5px; color: var(--muted); }
   .meta { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px; margin-bottom: 12px; }
   .skipped { margin-bottom: 12px; }
   .skipped ul { margin: 6px 0 0; padding-left: 18px; }
@@ -228,8 +226,12 @@
   .desc { margin: 0; color: var(--text); overflow-wrap: anywhere; }
   .stats { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 16px; font-variant-numeric: tabular-nums; }
   .stats span { display: inline-flex; align-items: center; gap: 6px; }
-  .foot { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; margin-top: auto; padding-top: 10px; border-top: 1px solid var(--line-soft); }
-  .contact { min-width: 0; overflow-wrap: anywhere; }
-  .addr { max-width: 100%; }
+  .foot { display: flex; align-items: center; gap: 8px 12px; margin-top: auto; padding-top: 10px; border-top: 1px solid var(--line-soft); }
+  .foot-info { flex: 1; min-width: 0; display: flex; flex-direction: column; align-items: flex-start; gap: 2px; }
+  .contact { min-width: 0; overflow-wrap: anywhere; text-align: left; font-size: var(--fs-sm); }
+  .addr { max-width: 100%; font-size: var(--fs-xs); background: none; padding: 0; color: var(--muted); }
+  .foot > :global(.btn), .foot > :global(.chip) { flex: none; }
   .entry .hint { margin: 0; }
+  .notice p { margin: 0; }
+  .retry { align-self: flex-start; }
 </style>

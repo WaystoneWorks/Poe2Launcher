@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   blocksEnable, bestVersion, compatLabel, defaultScope, dialogHasCode, dialogMods, filterIndex, groupMods, indexTags,
-  isValid, isZip, needsDialog, overridable, scopeOptions, sideLabel, stepTarget, syncBlocker, totalBytes,
+  isValid, isZip, needsDialog, overridable, scopeOptions, sideLabel, stepTarget, loadRanks, syncBlocker, totalBytes,
 } from './mods';
 import type { IndexMod, IndexVersion, ModEntry, ProfileView, SyncMod, SyncPlan } from './types';
 
@@ -9,7 +9,7 @@ function entry(id: string, version: string, o: Partial<ModEntry> = {}): ModEntry
   return {
     id, version, side: 'client', errors: [], unknown_keys: [], compat: { kind: 'ok' }, compat_text: 'compatible', sha256: 'a'.repeat(64),
     size: 100, source: 'zip', added: 0, has_code: true, server_half_left_out: false, enabled: false, enabled_all: false, required: false,
-    in_effect: false, origin: null, order: null,
+    in_effect: false, origin: null, order: null, pin_index: null,
     manifest: {
       id, name: id, version, description: '', authors: [], license: '', homepage: '', side: 'client', game_versions: [], hook_api: 1, server_api: null,
       after: [], before: [], conflicts: [], dependencies: {}, entry_dll: `${id}.dll`, has_code: true,
@@ -78,6 +78,23 @@ describe('mods helpers', () => {
     expect(stepTarget(list, 'a', -1)).toBeNull();
     expect(stepTarget(list, 'b', 1)).toBeNull();
     expect(stepTarget(list, 'c', 1)).toBeNull();
+  });
+
+  it('steps in the scope\'s pin order, not in the order the entries arrive (by id)', () => {
+    // Pins [b, a]: a loads second.
+    const list = [entry('a', '1.0.0', { enabled: true, pin_index: 1 }), entry('b', '1.0.0', { enabled: true, pin_index: 0 })];
+    expect(stepTarget(list, 'a', -1)).toBe(0);
+    expect(stepTarget(list, 'a', 1)).toBeNull();
+    expect(stepTarget(list, 'b', 1)).toBe(1);
+    expect(stepTarget(list, 'b', -1)).toBeNull();
+  });
+
+  it('numbers the loaded entries without gaps', () => {
+    const list = [entry('a', '1.0.0', { in_effect: true, order: 4 }), entry('b', '1.0.0', { in_effect: true, order: 1 }), entry('c', '1.0.0')];
+    const r = loadRanks(list);
+    expect(r.get('b@1.0.0')).toBe(1);
+    expect(r.get('a@1.0.0')).toBe(2);
+    expect(r.has('c@1.0.0')).toBe(false);
   });
 
   it('knows valid entries and zip files', () => {

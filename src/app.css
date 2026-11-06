@@ -31,6 +31,11 @@ ul, ol { margin: 0; }
 .err { color: var(--danger); }
 .grow { flex: 1 1 auto; min-width: 0; }
 .num { text-align: right; font-variant-numeric: tabular-nums; }
+.check:has(input:disabled) { opacity: 0.55; cursor: not-allowed; }
+.dot-state { width: 8px; height: 8px; border-radius: 50%; background: var(--faint); flex: none; transition: background var(--dur) var(--ease); }
+.dot-state.on { background: var(--ok); box-shadow: 0 0 8px var(--ok); }
+.dot-state.warm { background: var(--warn); }
+.dot-state.bad { background: var(--danger); }
 .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
 .hint { font-size: 12px; color: var(--muted); line-height: 1.5; }
 ::selection { background: rgb(209 161 78 / 0.35); }
@@ -57,6 +62,7 @@ button, input, select, textarea { font: inherit; color: inherit; }
 .btn.primary:hover:not(:disabled) { background: var(--play-bg); border-color: var(--gold-2); filter: brightness(1.12); }
 .btn.danger { color: var(--danger); border-color: color-mix(in srgb, var(--danger) 45%, var(--line)); background: transparent; }
 .btn.danger:hover:not(:disabled) { background: var(--danger-bg); border-color: var(--danger); }
+.btn.danger-hover:hover:not(:disabled) { color: var(--danger); background: var(--danger-bg); }
 .btn.danger.solid { background: var(--danger); border-color: var(--danger); color: #fff; }
 .btn.danger.solid:hover:not(:disabled) { background: var(--danger); filter: brightness(1.1); }
 .btn.ghost { background: transparent; border-color: transparent; color: var(--muted); }
@@ -377,8 +383,11 @@ dialog.modal::backdrop { background: rgb(5 2 2 / 0.65); animation: fade-in var(-
 .toast-icon { display: grid; place-items: center; flex: none; padding-top: 1px; }
 .toast.ok .toast-icon { color: var(--ok); }
 .toast.error .toast-icon { color: var(--danger); }
+.toast.warn .toast-icon { color: var(--warn); }
+.toast.warn .toast-timer { background: var(--warn); }
 .toast-text { flex: 1 1 auto; padding-top: 1px; overflow-wrap: anywhere; }
 .toast-timer { position: absolute; left: 0; bottom: 0; height: 2px; width: 100%; transform-origin: left; animation: timer linear forwards; }
+.toast:hover .toast-timer, .toast:focus-within .toast-timer { animation-play-state: paused; }
 .toast.ok .toast-timer { background: var(--ok); }
 .toast.error .toast-timer { background: var(--danger); }
 
@@ -390,6 +399,7 @@ dialog.modal::backdrop { background: rgb(5 2 2 / 0.65); animation: fade-in var(-
   .side a span.label, .brand-text, .side-card, .side-foot .ver, .vt-text, .nav-badge { display: none; }
   .dd.attached .dd-trigger { justify-content: center; padding: 0; }
   .dd.attached .dd-trigger > .icon:last-child { display: none; }
+  .version-trigger { flex: none; justify-content: center; }
   .dd.attached .dd-menu { width: 220px; right: auto; border-radius: 0 var(--radius) var(--radius) var(--radius); }
   main { padding: 28px 16px 22px; }
   .grid3 { grid-template-columns: 1fr; }

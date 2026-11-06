@@ -211,6 +211,8 @@ export interface ModEntry {
   in_effect: boolean;
   origin: ModOrigin | null;
   order: number | null;
+  /** Position among the scope's enabled mods (what modMove takes). */
+  pin_index: number | null;
 }
 
 export type SyncState = 'ready' | 'missing' | 'changed' | 'incompatible' | 'no_source';

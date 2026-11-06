@@ -84,6 +84,7 @@
   class:max={maximized}
   class:fullscreen
   class:preview={!native}
+  style:--titlebar-h={custom && native ? '32px' : '0px'}
   data-mode={app.official ? 'official' : 'private'}
 >
   {#if custom && native && !maximized && !fullscreen}<ResizeHandles />{/if}
@@ -99,7 +100,12 @@
       </div>
       <VersionPicker />
       {#each visible as n (n.page)}
-        <a href={'#/' + n.page} aria-current={page === n.page ? 'page' : undefined}>
+        <a
+          href={'#/' + n.page}
+          aria-current={page === n.page ? 'page' : undefined}
+          aria-label={n.page === 'news' && unseen > 0 ? `${n.label}, ${unseen} new` : n.label}
+          title={n.label}
+        >
           <Icon name={n.icon} size={16} filled={n.icon === 'play' && page === n.page} />
           <span class="label">{n.label}</span>
           {#if n.page === 'news' && unseen > 0}<span class="nav-badge" aria-label="{unseen} new">{unseen}</span>{/if}

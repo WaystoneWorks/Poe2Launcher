@@ -171,14 +171,22 @@ export function parseMarkdown(src: string): Block[] {
   return blocks;
 }
 
+/** List items on one line: phrases read as sentences ("a b. c d"), single words as a list ("a, b"). */
+function listText(items: string[]): string {
+  const xs = items.map((x) => x.trim()).filter(Boolean);
+  if (!xs.some((x) => /\s/.test(x))) return xs.join(', ');
+  return xs.map((x, i) => (i < xs.length - 1 && !/[.!?:;…]$/.test(x) ? `${x}.` : x)).join(' ');
+}
+
 /** The text of a markdown source without formatting, for a one-line preview. */
 export function plainText(src: string): string {
   const text = (inl: Inline[]): string => inl.map((x) => (x.t === 'text' || x.t === 'code' ? x.s : text(x.c))).join('');
-  return parseMarkdown(src)
-    .map((b) => (b.t === 'ul' || b.t === 'ol' ? b.items.map(text).join(' · ') : b.t === 'code' ? b.s : text(b.c)))
-    .join(' ')
-    .replace(/\s+/g, ' ')
-    .trim();
+  const parts = parseMarkdown(src)
+    .map((b) => (b.t === 'ul' || b.t === 'ol' ? listText(b.items.map(text)) : b.t === 'code' ? b.s : text(b.c)))
+    .map((p) => p.replace(/\s+/g, ' ').trim())
+    .filter(Boolean);
+  // Blocks run together on one line: end each one that has no closing punctuation with a period.
+  return parts.map((p, i) => (i < parts.length - 1 && !/[.!?:;…]$/.test(p) ? `${p}.` : p)).join(' ');
 }
 
 /** Length of a news preview, in characters. */

@@ -1,5 +1,5 @@
 <script lang="ts">
-  import type { Snippet } from 'svelte';
+  import { onMount, type Snippet } from 'svelte';
   import { fade, fly } from 'svelte/transition';
   import { DUR, ease, ms } from '../motion';
   import Icon from './Icon.svelte';
@@ -8,11 +8,41 @@
   let { title, onclose, width = 720, children, head }: { title: string; onclose: () => void; width?: number; children: Snippet; head?: Snippet } = $props();
   let panel: HTMLElement | undefined = $state();
 
-  $effect(() => {
+  // Focus moves into the panel on open and back to what opened it on close.
+  onMount(() => {
+    const opener = document.activeElement as HTMLElement | null;
     panel?.focus();
+    return () => {
+      if (opener?.isConnected) opener.focus();
+    };
   });
 
+  /** A modal dialog opened from inside the drawer (a confirm) owns Escape and the focus. */
+  function dialogOpen(): boolean {
+    return document.querySelector('dialog[open]') !== null;
+  }
+
   function key(e: KeyboardEvent) {
+    if (e.defaultPrevented || dialogOpen()) return;
+    if (e.key === 'Tab' && panel) {
+      // Keep Tab inside the panel (aria-modal).
+      const items = [...panel.querySelectorAll<HTMLElement>('a[href], button:not(:disabled), input:not(:disabled), select:not(:disabled), textarea:not(:disabled), summary, [tabindex]:not([tabindex="-1"])')].filter((el) => el.offsetParent !== null);
+      if (items.length === 0) return;
+      const first = items[0]!;
+      const last = items[items.length - 1]!;
+      const active = document.activeElement;
+      if (e.shiftKey && (active === first || active === panel)) {
+        e.preventDefault();
+        last.focus();
+      } else if (!e.shiftKey && active === last) {
+        e.preventDefault();
+        first.focus();
+      } else if (!panel.contains(active)) {
+        e.preventDefault();
+        first.focus();
+      }
+      return;
+    }
     if (e.key === 'Escape') {
       e.preventDefault();
       onclose();
@@ -30,7 +60,7 @@
   aria-label={title}
   tabindex="-1"
   bind:this={panel}
-  style:width="min({width}px, calc(100% - 48px))"
+  style:width="min({width}px, calc(100% - 120px))"
   transition:fly={{ x: 40, duration: ms(DUR.slow), easing: ease, opacity: 0 }}
 >
   <div class="drawer-head">
@@ -45,9 +75,9 @@
 </div>
 
 <style>
-  .drawer-scrim { position: fixed; inset: 0; z-index: 70; background: rgb(5 2 2 / 0.6); }
+  .drawer-scrim { position: fixed; inset: var(--titlebar-h, 0px) 0 0 0; z-index: 70; background: rgb(5 2 2 / 0.6); }
   .drawer {
-    position: fixed; top: 0; right: 0; bottom: 0; z-index: 71; display: flex; flex-direction: column;
+    position: fixed; top: var(--titlebar-h, 0px); right: 0; bottom: 0; z-index: 71; display: flex; flex-direction: column;
     background: var(--surface); border-left: 1px solid var(--gold); box-shadow: var(--shadow); outline: none;
   }
   .drawer-head { display: flex; align-items: center; gap: var(--sp-3); padding: var(--sp-4) var(--sp-5); border-bottom: 1px solid var(--line-soft); }

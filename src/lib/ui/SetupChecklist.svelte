@@ -7,7 +7,7 @@
 
   // The official mode has no server of its own to host or join.
   const steps = $derived(
-    setupSteps({ gameInstalled: app.status?.installed ?? false, hookReady: hookReady(app.hook), profiles: app.profiles.length }).filter(
+    setupSteps({ gameInstalled: app.status?.installed ?? false, hookReady: hookReady(app.hook), profiles: app.profiles.length, official: app.official }).filter(
       (s) => !app.official || s.id !== 'server',
     ),
   );
@@ -25,7 +25,7 @@
 {#if show}
   <section class="card setup" aria-labelledby="setup-title">
     <div class="card-head">
-      <span class="head-icon"><Icon name="check" size={16} /></span>
+      <span class="head-icon"><Icon name="play" size={16} /></span>
       <h2 id="setup-title">Get ready to play</h2>
       <span class="grow"></span>
       <span class="muted">{steps.filter((s) => s.done).length} of {steps.length} done</span>

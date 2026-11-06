@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
-  formFromSettings, isUp, logLevel, playerAddress, portsToForward, pushLog, runLabel, settingsFromForm,
+  formFromSettings, isUp, logLevel, playerAddress, portsToForward, pushLog, runChip, runLabel, settingsFromForm,
   validateHostForm, validPublicHost, updateCheckDue, updateHeadline, updatePlan, UPDATE_CHECK_TTL, type HostForm,
 } from './host';
 import type { HostSettings, ServerUpdateCheck } from './types';
@@ -75,6 +75,9 @@ describe('what to forward', () => {
 describe('run state and log', () => {
   it('words the states', () => {
     expect(runLabel({ state: 'stopped' }, false)).toBe('Stopped');
+    expect(runChip({ state: 'stopped' }, false)).toBe('stopped');
+    expect(runChip({ state: 'running', pid: 7 }, false)).toBe('starting...');
+    expect(runChip({ state: 'running', pid: 7 }, true)).toBe('running');
     expect(runLabel({ state: 'running', pid: 7 }, false)).toContain('Starting');
     expect(runLabel({ state: 'running', pid: 7 }, true)).toContain('Running');
     expect(runLabel({ state: 'exited', code: 3 }, false)).toContain('unexpectedly');

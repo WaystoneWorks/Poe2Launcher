@@ -95,11 +95,18 @@ export function groupMods(entries: ModEntry[]): ModGroup[] {
 
 /** Where an enabled mod ends up when moved one step among the scope's enabled mods; null at the ends. */
 export function stepTarget(entries: ModEntry[], id: string, delta: -1 | 1): number | null {
-  const enabled = entries.filter((e) => e.enabled);
+  // The scope's own order (its pin list), not the order the entries arrive in (by id).
+  const enabled = entries.filter((e) => e.enabled).sort((a, b) => (a.pin_index ?? 0) - (b.pin_index ?? 0));
   const i = enabled.findIndex((e) => e.id === id);
   if (i < 0) return null;
   const j = i + delta;
   return j < 0 || j >= enabled.length ? null : j;
+}
+
+/** Load position (1-based) of each in-effect entry among those in the list, so the numbers have no gaps. */
+export function loadRanks(entries: ModEntry[]): Map<string, number> {
+  const on = entries.filter((e) => e.in_effect).sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+  return new Map(on.map((e, i) => [`${e.id}@${e.version}`, i + 1]));
 }
 
 export function isValid(m: ModEntry): boolean {

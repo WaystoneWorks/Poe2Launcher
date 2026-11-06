@@ -58,13 +58,15 @@ export interface SetupInputs {
   gameInstalled: boolean;
   hookReady: boolean;
   profiles: number;
+  /** Official (read-only) mode: the hook only observes. */
+  official?: boolean;
 }
 
 /** The first-start checklist: install the game, get the hook, then host or join a server. */
 export function setupSteps(i: SetupInputs): SetupStep[] {
   return [
     { id: 'game', title: 'Install the game', done: i.gameInstalled, detail: 'Download Path of Exile 2 from Steam into the launcher\'s own folder.' },
-    { id: 'hook', title: 'Get the client hook', done: i.hookReady, detail: 'The DLL that lets the game talk to a private server.' },
+    { id: 'hook', title: 'Get the client hook', done: i.hookReady, detail: i.official ? 'The read-only DLL that observes the official game (it never changes anything).' : 'The DLL that lets the game talk to a private server.' },
     { id: 'server', title: 'Pick a server', done: i.profiles > 0, detail: 'Host your own on this computer, or join a friend\'s or a public one.' },
   ];
 }

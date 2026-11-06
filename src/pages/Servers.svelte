@@ -10,14 +10,14 @@
   import { normalizeServerUrl } from '../lib/url';
   import { formatUptime } from '../lib/format';
   import { serverCompat, versionLabel } from '../lib/gameversion';
-  import { isUp, runLabel } from '../lib/host';
+  import { isUp, runChip } from '../lib/host';
   import { router } from '../lib/router.svelte';
   import PageHead from '../lib/ui/PageHead.svelte';
   import Icon from '../lib/ui/Icon.svelte';
   import Chip from '../lib/ui/Chip.svelte';
   import Empty from '../lib/ui/Empty.svelte';
   import Spinner from '../lib/ui/Spinner.svelte';
-  import Tabs from '../lib/ui/Tabs.svelte';
+  import Tabs, { tabId } from '../lib/ui/Tabs.svelte';
   import ServerBrowser from '../lib/ui/ServerBrowser.svelte';
   import LeagueList from '../lib/ui/LeagueList.svelte';
   import Drawer from '../lib/ui/Drawer.svelte';
@@ -151,12 +151,16 @@
   let editing = $state<string | null>(null);
   let busy = $state<string | null>(null);
   const normalized = $derived(normalizeServerUrl(url));
+  /** "Not an address" waits until the field was left once, so typing is not interrupted. */
+  let urlTouched = $state(false);
+  const urlBad = $derived(urlTouched && url.trim() !== '' && !normalized);
   const valid = $derived(name.trim().length > 0 && normalized !== null);
 
   async function openForm(p?: Profile) {
     editing = p?.id ?? null;
     name = p?.name ?? '';
     url = p?.url ?? '';
+    urlTouched = false;
     await tick();
     dialog?.showModal();
   }
@@ -209,7 +213,7 @@
 <PageHead title="Servers" sub={`For ${versionLabel(app.version)}`} />
 
 <div class="tabrow">
-  <Tabs {tabs} value={tab} label="Servers" onchange={goTab} />
+  <Tabs {tabs} value={tab} label="Servers" panel="servers-panel" onchange={goTab} />
   <span class="grow"></span>
   {#if tab === 'mine' && app.profiles.length > 0}
     <button type="button" class="btn sm" onclick={() => openForm()}><Icon name="plus" size={14} /> Add by address</button>
@@ -225,12 +229,13 @@
   {@const hosted = hostedBy.get(p.id)}
   <div class="srv" class:selected>
     <div class="srv-top">
-      <span class="dot-state" class:on={typeof info === 'object'} class:bad={typeof info === 'string' && !hosted}></span>
+      <span class="dot-state" class:on={typeof info === 'object'} class:bad={typeof info === 'string' && !hosted} aria-hidden="true"></span>
       <div class="srv-name">
         <b>{p.name}</b>
         <small>
           <code>{p.url}</code>
-          {#if typeof info === 'object'} · {info.online} online{app.pings[p.id] !== undefined ? ` · ${app.pings[p.id]} ms` : ''}
+          {#if hosted && !isUp(hosted.run) && typeof info === 'object'} · answering, but not started by this launcher
+          {:else if typeof info === 'object'} · {info.online} online{app.pings[p.id] !== undefined ? ` · ${app.pings[p.id]} ms` : ''}
           {:else if hosted && !isUp(hosted.run)} · stopped
           {:else if typeof info === 'string'} · unreachable{/if}
         </small>
@@ -241,13 +246,14 @@
         {:else if compat.kind === 'unsupported'}<Chip tone="bad" icon="alert">incompatible</Chip>{/if}
       </div>
       <div class="srv-actions">
-        {#if hosted && !isUp(hosted.run)}
-          <button type="button" class="btn sm primary" disabled={!!hostTask[hosted.id] || !hosted.settings.configured} onclick={() => hostStart(hosted.id)}>
+        {#if selected}<Chip tone="accent" icon="check">selected</Chip>{/if}
+        {#if hosted && !isUp(hosted.run) && typeof info !== 'object'}
+          <button type="button" class="btn sm" disabled={!!hostTask[hosted.id] || !hosted.settings.configured || !hosted.game_installed} onclick={() => hostStart(hosted.id)}
+            title={!hosted.settings.configured ? 'Apply its settings first (Host > Manage)' : !hosted.game_installed ? 'Install the game first (Library)' : 'Start the server hosted on this computer'}>
             {#if hostTask[hosted.id] === 'start'}<Spinner size={12} />{/if} Start
           </button>
         {/if}
-        {#if selected}<Chip tone="accent" icon="check">selected</Chip>
-        {:else}<button type="button" class="btn sm" onclick={() => app.select(p.id)}>Select</button>{/if}
+        {#if !selected}<button type="button" class="btn sm" onclick={() => app.select(p.id)}>Select</button>{/if}
         <button type="button" class="btn sm icon ghost" aria-expanded={isOpen(p)} aria-label="Details of {p.name}" title="Details, web admin, edit" onclick={() => (open[p.id] = !isOpen(p))}>
           <Icon name="chevron" size={15} class={isOpen(p) ? 'flip' : ''} />
         </button>
@@ -299,79 +305,80 @@
   </div>
 {/snippet}
 
-{#if tab === 'browse'}
-  <ServerBrowser />
-{:else if tab === 'host'}
-  {#if !hostsLoaded}
-    <div class="loading"><Spinner size={18} /> Loading...</div>
-  {:else if hosts.length === 0}
-    <Empty icon="host" title="No server on this computer yet">
-      Run a private PoE2 server here and let friends join it. You can run several, each on its own ports.
+<div id="servers-panel" role="tabpanel" aria-labelledby={tabId('servers-panel', tab)}>
+  {#if tab === 'browse'}
+    <ServerBrowser />
+  {:else if tab === 'host'}
+    {#if !hostsLoaded}
+      <div class="loading"><Spinner size={18} /> Loading...</div>
+    {:else if hosts.length === 0}
+      <Empty icon="host" title="No server on this computer yet">
+        Run a private PoE2 server here and let friends join it. You can run several, each on its own ports.
+        {#snippet action()}
+          <button type="button" class="btn primary" onclick={openCreate}><Icon name="plus" size={14} /> Create a server</button>
+        {/snippet}
+      </Empty>
+    {:else}
+      <div class="srv-list">
+        {#each hosts as h (h.id)}
+          {@const up = isUp(h.run)}
+          {@const ready = h.info != null}
+          <div class="srv host">
+            <div class="srv-top">
+              <div class="srv-name">
+                <b>{h.settings.server_name}</b>
+                <small>login {h.settings.login_port} · game {h.settings.instance_port} · web {h.settings.web_port}{h.package ? ` · server ${h.package.server_version}` : ''}</small>
+              </div>
+              <div class="srv-chips">
+                <Chip tone={ready ? 'ok' : up ? 'warn' : h.run.state === 'exited' && h.run.code !== 0 && h.run.code !== null ? 'bad' : 'neutral'} dot>
+                  {runChip(h.run, ready)}
+                </Chip>
+                {#if h.info}<span class="muted small">{h.info.online} online · up {formatUptime(h.info.uptime_secs)}</span>{/if}
+                {#if !h.settings.configured}<Chip tone="warn">not set up</Chip>{/if}
+                {#if app.serverUpdates[h.id]?.update_available}<Chip tone="accent" icon="download">update</Chip>{/if}
+              </div>
+              <div class="srv-actions">
+                {#if up}
+                  <button type="button" class="btn sm" disabled={!!hostTask[h.id] || h.run.state === 'stopping'} onclick={() => hostStop(h.id)}>
+                    {#if hostTask[h.id] === 'stop'}<Spinner size={12} />{/if} Stop
+                  </button>
+                {:else}
+                  <button type="button" class="btn sm" disabled={!!hostTask[h.id] || !h.settings.configured || !h.game_installed} onclick={() => hostStart(h.id)}
+                    title={!h.settings.configured ? 'Apply its settings first (Manage)' : !h.game_installed ? 'Install the game first (Library)' : ''}>
+                    {#if hostTask[h.id] === 'start'}<Spinner size={12} />{/if} Start
+                  </button>
+                {/if}
+                <button type="button" class="btn sm" onclick={() => openManage(h.id)}><Icon name="settings" size={13} /> Manage</button>
+              </div>
+            </div>
+          </div>
+        {/each}
+      </div>
+      <p class="hint host-hint">Servers run while the launcher is open. Each one has its own folder: database, settings, backups and log. Downloaded server programs are shared.</p>
+    {/if}
+  {:else if app.profiles.length === 0}
+    <Empty icon="servers" title="No servers yet">
+      Add a friend's server by its address, find one under <a href="#/servers?tab=browse">Browse public</a>{#if canHost}, or host your own under <a href="#/servers?tab=host">Host</a>{/if}.
       {#snippet action()}
-        <button type="button" class="btn primary" onclick={openCreate}><Icon name="plus" size={14} /> Create a server</button>
+        <button type="button" class="btn primary" onclick={() => openForm()}><Icon name="plus" size={14} /> Add by address</button>
       {/snippet}
     </Empty>
   {:else}
     <div class="srv-list">
-      {#each hosts as h (h.id)}
-        {@const up = isUp(h.run)}
-        {@const ready = h.info != null}
-        <div class="srv host">
-          <div class="srv-top">
-            <span class="dot-state" class:on={ready} class:warm={up && !ready}></span>
-            <div class="srv-name">
-              <b>{h.settings.server_name}</b>
-              <small>login {h.settings.login_port} · game {h.settings.instance_port} · web {h.settings.web_port}{h.package ? ` · server ${h.package.server_version}` : ''}</small>
-            </div>
-            <div class="srv-chips">
-              <Chip tone={ready ? 'ok' : up ? 'warn' : h.run.state === 'exited' && h.run.code !== 0 && h.run.code !== null ? 'bad' : 'neutral'} dot>
-                {runLabel(h.run, ready).replace(/ \(pid \d+\)/, '')}
-              </Chip>
-              {#if h.info}<span class="muted small">{h.info.online} online · up {formatUptime(h.info.uptime_secs)}</span>{/if}
-              {#if !h.settings.configured}<Chip tone="warn">not set up</Chip>{/if}
-              {#if app.serverUpdates[h.id]?.update_available}<Chip tone="accent" icon="download">update</Chip>{/if}
-            </div>
-            <div class="srv-actions">
-              {#if up}
-                <button type="button" class="btn sm" disabled={!!hostTask[h.id] || h.run.state === 'stopping'} onclick={() => hostStop(h.id)}>
-                  {#if hostTask[h.id] === 'stop'}<Spinner size={12} />{/if} Stop
-                </button>
-              {:else}
-                <button type="button" class="btn sm primary" disabled={!!hostTask[h.id] || !h.settings.configured || !h.game_installed} onclick={() => hostStart(h.id)}
-                  title={!h.settings.configured ? 'Apply its settings first (Manage)' : !h.game_installed ? 'Install the game first (Library)' : ''}>
-                  {#if hostTask[h.id] === 'start'}<Spinner size={12} />{/if} Start
-                </button>
-              {/if}
-              <button type="button" class="btn sm" onclick={() => openManage(h.id)}><Icon name="settings" size={13} /> Manage</button>
-            </div>
-          </div>
-        </div>
-      {/each}
+      {#each app.profiles as p (p.id)}{@render row(p)}{/each}
     </div>
-    <p class="hint host-hint">Servers run while the launcher is open. Each one has its own folder: database, settings, backups and log. Downloaded server programs are shared.</p>
   {/if}
-{:else if app.profiles.length === 0}
-  <Empty icon="servers" title="No servers yet">
-    Add a friend's server by its address, find one under <a href="#/servers?tab=browse">Browse public</a>{#if canHost}, or host your own under <a href="#/servers?tab=host">Host</a>{/if}.
-    {#snippet action()}
-      <button type="button" class="btn primary" onclick={() => openForm()}><Icon name="plus" size={14} /> Add by address</button>
-    {/snippet}
-  </Empty>
-{:else}
-  <div class="srv-list">
-    {#each app.profiles as p (p.id)}{@render row(p)}{/each}
-  </div>
-{/if}
+</div>
 
 <dialog bind:this={dialog} class="modal" aria-labelledby="srv-form-title" onclose={() => (editing = null)}>
   <form class="dialog-body" onsubmit={save}>
     <div class="dialog-head"><h2 id="srv-form-title">{editing ? 'Edit server' : 'Add a server'}</h2></div>
-    <label class="field"><span>Name</span><input bind:value={name} maxlength="64" placeholder="My cluster" /></label>
+    <label class="field"><span>Name</span><input bind:value={name} maxlength="64" placeholder="Friend's realm" /></label>
     <label class="field">
       <span>Address (web API)</span>
-      <input bind:value={url} placeholder="127.0.0.1:8080 or https://play.example" aria-invalid={url !== '' && !normalized} />
+      <input bind:value={url} placeholder="127.0.0.1:8080 or https://play.example" aria-invalid={urlBad} aria-describedby={urlBad ? 'srv-url-err' : undefined} onblur={() => (urlTouched = true)} />
       {#if normalized && normalized !== url.trim()}<span class="hint">Will be saved as <code>{normalized}</code></span>{/if}
-      {#if url !== '' && !normalized}<span class="err">Not an address</span>{/if}
+      {#if urlBad}<span class="err" id="srv-url-err">Not an address: use host:port or a http(s) URL</span>{/if}
     </label>
     <p class="hint">The web address the server's owner gave you (its web API). Accounts are the server's: you sign in on the game's login screen.</p>
     <div class="actions">
@@ -402,7 +409,7 @@
 {/if}
 
 <style>
-  .tabrow { display: flex; align-items: flex-end; gap: var(--sp-3); margin-bottom: var(--sp-5); border-bottom: 1px solid var(--line); }
+  .tabrow { display: flex; align-items: flex-end; gap: var(--sp-3); min-height: 44px; margin-bottom: var(--sp-5); border-bottom: 1px solid var(--line); }
   .tabrow :global(.tabs) { border-bottom: 0; margin: 0; }
   .tabrow > .btn { margin-bottom: var(--sp-2); }
   .srv-list { display: flex; flex-direction: column; }
@@ -425,10 +432,6 @@
   .srv-more .kv { margin-top: var(--sp-3); font-size: var(--fs-sm); }
   .srv-tools { margin-top: var(--sp-3); }
   .srv-leagues { margin: var(--sp-3) 0 var(--sp-2); font-size: var(--fs-sm); color: var(--muted); font-weight: 600; }
-  .dot-state { width: 8px; height: 8px; border-radius: 50%; background: var(--faint); flex: none; }
-  .dot-state.on { background: var(--ok); box-shadow: 0 0 8px var(--ok); }
-  .dot-state.warm { background: var(--warn); }
-  .dot-state.bad { background: var(--danger); }
   .small { font-size: var(--fs-xs); }
   .host-hint { margin-top: var(--sp-4); }
 </style>

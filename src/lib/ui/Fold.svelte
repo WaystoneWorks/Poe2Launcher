@@ -27,7 +27,7 @@
   .fold.danger { border-color: color-mix(in srgb, var(--danger) 40%, var(--line)); }
   summary {
     display: flex; align-items: center; gap: var(--sp-3); padding: 14px var(--sp-4); cursor: pointer; list-style: none;
-    font: 600 12.5px/1.2 var(--font-head); letter-spacing: var(--tracking-head); text-transform: uppercase; color: var(--text);
+    font: 600 14px/1.3 var(--font-head); letter-spacing: 0.06em; color: var(--text);
   }
   summary::-webkit-details-marker { display: none; }
   summary:hover .fold-title { color: var(--gold-2); }

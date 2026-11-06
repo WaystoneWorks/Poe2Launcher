@@ -3,7 +3,8 @@
   import { ipc } from '../lib/ipc';
   import { run } from '../lib/notify.svelte';
   import { defaultScope, scopeOptions } from '../lib/mods';
-  import Tabs from '../lib/ui/Tabs.svelte';
+  import Tabs, { tabId } from '../lib/ui/Tabs.svelte';
+  import Dropdown from '../lib/ui/Dropdown.svelte';
   import ModsInstalled from '../lib/ui/ModsInstalled.svelte';
   import ModsBrowse from '../lib/ui/ModsBrowse.svelte';
   import type { ModsView } from '../lib/types';
@@ -30,12 +31,10 @@
     Mods are kept in the launcher's cache (several versions side by side) and switched on <b>per server</b>: a server's required mods are always on for it,
     your own mods only where you enable them.
   </p>
-  <label class="scope">
-    <span class="muted">Mods for</span>
-    <select bind:value={scope} aria-label="Mods for which server">
-      {#each options as o (o.value)}<option value={o.value}>{o.label}</option>{/each}
-    </select>
-  </label>
+  <div class="scope">
+    <span class="muted" aria-hidden="true">Mods for</span>
+    <Dropdown label="Mods for" value={scope} align="end" onselect={(v) => (scope = v)} items={options.map((o) => ({ value: o.value, label: o.label }))} />
+  </div>
 </div>
 
 <Tabs
@@ -44,17 +43,20 @@
     { id: 'browse', label: 'Browse', icon: 'search' },
   ]}
   value={view}
+  panel="mods-panel"
   label="Mods"
   onchange={(id) => (view = id as 'installed' | 'browse')}
 />
 
-{#if view === 'browse'}
-  <ModsBrowse {data} {scope} reload={load} openInstalled={() => (view = 'installed')} />
-{:else}
-  <ModsInstalled {data} {scope} reload={load} openBrowse={() => (view = 'browse')} />
-{/if}
+<div id="mods-panel" role="tabpanel" aria-labelledby={tabId('mods-panel', view)}>
+  {#if view === 'browse'}
+    <ModsBrowse {data} {scope} reload={load} openInstalled={() => (view = 'installed')} />
+  {:else}
+    <ModsInstalled {data} {scope} reload={load} openBrowse={() => (view = 'browse')} />
+  {/if}
+</div>
 
 <style>
-  .scope { display: inline-flex; align-items: center; gap: 8px; flex: none; }
-  .scope select { min-width: 190px; }
+  .scope { display: inline-flex; align-items: center; gap: 8px; flex: none; white-space: nowrap; }
+  .scope :global(.dd-trigger) { min-width: 200px; }
 </style>

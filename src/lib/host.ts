@@ -91,6 +91,12 @@ export function playerAddress(f: Pick<HostForm, 'public_host' | 'web_port'>): st
   return `${h.includes(':') ? `[${h}]` : h}:${f.web_port}`;
 }
 
+/** The short state for a chip: no pid, lower case like the other chips. */
+export function runChip(run: RunState, ready: boolean): string {
+  const s = runLabel(run, ready).replace(/ \(pid \d+\)/, '').replace(/, reading the game data\.\.\.$/, '...');
+  return s.charAt(0).toLowerCase() + s.slice(1);
+}
+
 export function runLabel(run: RunState, ready: boolean): string {
   switch (run.state) {
     case 'running':

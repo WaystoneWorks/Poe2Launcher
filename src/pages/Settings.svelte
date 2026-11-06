@@ -9,7 +9,7 @@
   import { router } from '../lib/router.svelte';
   import PageHead from '../lib/ui/PageHead.svelte';
   import UpdatePanel from '../lib/ui/UpdatePanel.svelte';
-  import Tabs from '../lib/ui/Tabs.svelte';
+  import Tabs, { tabId } from '../lib/ui/Tabs.svelte';
   import Icon from '../lib/ui/Icon.svelte';
   import Chip from '../lib/ui/Chip.svelte';
   import Switch from '../lib/ui/Switch.svelte';
@@ -23,12 +23,12 @@
   type TabId = 'general' | 'game' | 'steam' | 'mods' | 'about' | 'advanced';
   const linux = $derived(app.info?.os === 'linux');
   const tabs = $derived([
-    { id: 'general', label: 'General' },
-    { id: 'game', label: linux ? 'Game & Proton' : 'Game' },
-    { id: 'steam', label: 'Steam' },
-    { id: 'mods', label: 'Mods' },
-    { id: 'about', label: 'Updates & About' },
-    { id: 'advanced', label: 'Advanced' },
+    { id: 'general', label: 'General', icon: 'sun' as const },
+    { id: 'game', label: linux ? 'Game & Proton' : 'Game', icon: 'install' as const },
+    { id: 'steam', label: 'Steam', icon: 'key' as const },
+    { id: 'mods', label: 'Mods', icon: 'mods' as const },
+    { id: 'about', label: 'Updates & About', icon: 'info' as const },
+    { id: 'advanced', label: 'Advanced', icon: 'sliders' as const },
   ]);
   const tab = $derived.by<TabId>(() => {
     if (router.route.segments[0] === 'about') return 'about';
@@ -139,10 +139,10 @@
 
 <PageHead icon="settings" title="Settings" />
 
-<Tabs {tabs} value={tab} label="Settings" onchange={(id) => router.go('settings', { tab: id === 'general' ? undefined : id })} />
+<Tabs {tabs} value={tab} label="Settings" panel="settings-panel" onchange={(id) => router.go('settings', { tab: id === 'general' ? undefined : id })} />
 
 {#if draft && app.settings}
-  <div class="col">
+  <div class="col" id="settings-panel" role="tabpanel" aria-labelledby={tabId('settings-panel', tab)}>
     {#if tab === 'general'}
       <section class="card">
         <div class="card-head"><span class="head-icon"><Icon name="sun" size={16} /></span><h2>Appearance</h2></div>
@@ -266,7 +266,7 @@
           {#if !sourceIsDefault}<Chip tone="warn" icon="alert">custom</Chip>{/if}
         </div>
         <p class="hint">Where the launcher looks for server and client hook releases, news, the mod index, the public server list and launcher updates. GitHub (an owner) is the default; a static mirror is a web server or folder made by <code>cargo xtask release-mirror</code>.</p>
-        <div class="pills" role="radiogroup" aria-label="Release source">
+        <div class="pills source-pills" role="radiogroup" aria-label="Release source">
           <button type="button" class:on={draft.release_source.kind === 'github'} role="radio" aria-checked={draft.release_source.kind === 'github'} onclick={() => saveSource({ kind: 'github' })}>GitHub</button>
           <button type="button" class:on={draft.release_source.kind === 'static'} role="radio" aria-checked={draft.release_source.kind === 'static'} onclick={() => saveSource({ kind: 'static' })}>Static mirror</button>
         </div>
@@ -334,7 +334,8 @@
 {/if}
 
 <style>
-  .col { max-width: 760px; display: flex; flex-direction: column; gap: var(--sp-4); }
+  .col { max-width: var(--read-w); display: flex; flex-direction: column; gap: var(--sp-4); }
+  .source-pills { margin-bottom: var(--sp-3); }
   .col > :global(.card) { margin: 0; }
   .toggle { display: flex; flex-direction: column; gap: var(--sp-4); margin-top: var(--sp-4); }
   .toggle.first { margin-top: 0; }

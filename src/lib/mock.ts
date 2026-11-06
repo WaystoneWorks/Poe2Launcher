@@ -80,7 +80,7 @@ export function installMock(params: URLSearchParams): void {
   let hostRunning = params.has('serverrunning');
   // `?hosts=N`: N servers on this computer (default 1 when a package is installed).
   let hostIds: string[] = Array.from({ length: Number(params.get('hosts') ?? (hostVersion ? 1 : 0)) }, (_, i) => `s${i + 1}`);
-  const hostNames: Record<string, string> = { s1: 'Weekend realm', s2: 'Test cluster', s3: 'Hardcore' };
+  const hostNames: Record<string, string> = { s1: 'Local test realm', s2: 'Test cluster', s3: 'Hardcore' };
   const hostStatus = (id: string) => {
     const n = Number(id.slice(1)) - 1;
     const running = hostRunning && id === 's1';
@@ -179,7 +179,7 @@ export function installMock(params: URLSearchParams): void {
   function entry(id: string, version: string, o: Partial<ModEntry> = {}): ModEntry {
     const side = o.side === 'both' ? 'both' : 'client';
     const code = o.has_code ?? true;
-    return { id, version, side, manifest: manifestOf(id, version, side, code), errors: [], unknown_keys: [], compat: { kind: 'ok' }, compat_text: 'compatible', sha256: 'a'.repeat(64), size: 48_210, source: 'zip', added: now, has_code: code, server_half_left_out: side === 'both', enabled: false, enabled_all: false, required: false, in_effect: false, origin: null, order: null, ...o };
+    return { id, version, side, manifest: manifestOf(id, version, side, code), errors: [], unknown_keys: [], compat: { kind: 'ok' }, compat_text: 'compatible', sha256: 'a'.repeat(64), size: 48_210, source: 'zip', added: now, has_code: code, server_half_left_out: side === 'both', enabled: false, enabled_all: false, required: false, in_effect: false, origin: null, order: null, pin_index: null, ...o };
   }
   if (params.has('mods') || params.has('modsync')) {
     cache.push(entry('hud-tweaks', '1.2.0', { source: 'index' }), entry('hud-tweaks', '1.1.0', { source: 'index' }), entry('old-ui', '0.3.0', { compat: { kind: 'wrong_game', supported: ['0.4.0'] }, compat_text: 'made for 0.4.0' }), entry('loot-filter', '2.0.0', { has_code: false, source: 'folder' }));
@@ -203,11 +203,17 @@ export function installMock(params: URLSearchParams): void {
   function modsView(scope: string): ModsView {
     const sp = pins[scope] ?? [];
     const req = scope === 'p1' ? syncPlan('p1').mods : [];
-    const entries = cache.map((e, i) => {
-      const enabled = sp.some((x) => x.id === e.id && x.version === e.version);
-      const enabledAll = (pins.all ?? []).some((x) => x.id === e.id && x.version === e.version);
+    const reqN = scope === 'p1' && syncDone ? req.length : 0;
+    const all = pins.all ?? [];
+    const entries = cache.map((e) => {
+      const pi = sp.findIndex((x) => x.id === e.id && x.version === e.version);
+      const gi = all.findIndex((x) => x.id === e.id && x.version === e.version);
+      const enabled = pi >= 0;
+      const enabledAll = gi >= 0;
       const inEffect = (enabled || enabledAll) && e.compat?.kind === 'ok';
-      return { ...e, enabled, enabled_all: enabledAll, in_effect: inEffect, origin: inEffect ? (enabled ? 'profile' : 'global') : null, order: inEffect ? i : null } as ModEntry;
+      // Load order like the backend: required first, then this scope's pins, then the global ones.
+      const order = inEffect ? reqN + (enabled ? pi : sp.length + gi) : null;
+      return { ...e, enabled, enabled_all: enabledAll, in_effect: inEffect, origin: inEffect ? (enabled ? 'profile' : 'global') : null, order, pin_index: enabled ? pi : null } as ModEntry;
     });
     if (scope === 'p1' && syncDone) {
       for (const [i, m] of req.entries()) entries.unshift(entry(m.id, m.version, { side: m.side as 'both' | 'client', has_code: m.code, source: 'server', required: true, in_effect: true, origin: 'required', order: i, enabled: false }));
@@ -279,7 +285,13 @@ export function installMock(params: URLSearchParams): void {
           pins[scope] = list;
           return [];
         }
-        case 'mod_move': case 'mod_auto_order': return [];
+        case 'mod_move': {
+          const list = pins[a.scope as string] ?? [];
+          const from = list.findIndex((x) => x.id === a.id);
+          if (from >= 0) list.splice(Math.min(a.position as number, list.length - 1), 0, ...list.splice(from, 1));
+          return list.map((x) => x.id);
+        }
+        case 'mod_auto_order': return [];
         case 'mod_remove': { const i = cache.findIndex((m) => m.id === a.id && m.version === a.version); if (i >= 0) cache.splice(i, 1); return null; }
         case 'mods_dir': return '/home/user/.local/share/poe2-launcher/mods/cache';
         case 'mod_cache_status': return { dir: '/home/user/.local/share/poe2-launcher/mods/cache', entries: cache.length, bytes: cache.reduce((n, m) => n + m.size, 0), unused_entries: 1, unused_bytes: 48_210 };
