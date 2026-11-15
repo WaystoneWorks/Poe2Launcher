@@ -242,8 +242,8 @@ mod tests {
         let dirs = Dirs::under(Path::new("/r"));
         let s = Settings::default();
         assert_eq!(
-            s.install_dir_or_default(&dirs, "0.5.5f"),
-            Path::new("/r/data/game/0.5.5f")
+            s.install_dir_or_default(&dirs, "0.5.5g"),
+            Path::new("/r/data/game/0.5.5g")
         );
         assert_eq!(s.dll_dir_or_default(&dirs), Path::new("/r/data/hook-dlls"));
     }
@@ -276,11 +276,11 @@ mod tests {
     fn install_dirs_are_per_version() {
         let dirs = Dirs::under(Path::new("/r"));
         let s = Settings {
-            install_dirs: BTreeMap::from([("0.5.5f".to_owned(), PathBuf::from("/games/a"))]),
+            install_dirs: BTreeMap::from([("0.5.5g".to_owned(), PathBuf::from("/games/a"))]),
             ..Settings::default()
         };
         assert_eq!(
-            s.install_dir_or_default(&dirs, "0.5.5f"),
+            s.install_dir_or_default(&dirs, "0.5.5g"),
             Path::new("/games/a")
         );
         // Another version does not inherit it.

@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- **Game 0.5.5g.** The launcher installs and runs client 0.5.5g (revision 328873, a hotfix of 0.5.5f), the only supported build. 0.5.5f is no longer offered; saved settings for it are dropped when the settings are read.
+
 ## 0.8.0
 
 - **Game 0.5.5f.** The launcher now installs and runs client 0.5.5f (revision 328049), the only supported build, with its hook and server packages. Steam's depots and exe checks follow the new build.

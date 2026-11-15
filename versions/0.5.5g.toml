@@ -1,7 +1,8 @@
-# Game client 0.5.5f (Steam app "Path of Exile 2", build revision 328049, 2026-11-05/06), the only
-# supported build (0.5.5e Hotfix 1 was dropped when it arrived). Changed against 0.5.5e Hotfix 1:
-# instance opcodes from 0x2ef up moved by +3 and from 0x35d up by +4, InstanceDetails has a new
-# string, World fields moved, the instance cipher builder is inlined (docs/re/update-compatibility.md).
+# Game client 0.5.5g (Steam app "Path of Exile 2", build revision 328873, 2026-11-14; the user
+# calls it "0.5.5f restart", the client's user agent says poe2_production/tags/0.5.5g), the only
+# supported build (0.5.5f was dropped when it arrived). A hotfix against 0.5.5f: functions moved,
+# 21 bodies changed (none named), opcodes, layouts, struct offsets and the game data unchanged
+# (docs/re/update-compatibility.md).
 #
 # THE one place that defines a supported client build. It lives in Poe2Protocol
 # (versions/<version>.toml, next to opcodes/<version>/). Read by the servers (Poe2Server:
@@ -15,42 +16,42 @@
 # consumer's checkout (its working directory), which has this repository at modules/protocol
 # and Poe2ClientHook at modules/client-hook: Poe2Server and the hub both do. Sections a
 # consumer does not know are ignored by it (the launcher reads depots, [exe] and [verify]).
-version = "0.5.5f"
+version = "0.5.5g"
 # supported = tested end to end; experimental = signatures resolve, layouts unchecked;
 # legacy = kept for old captures only.
 status = "supported"
 app_id = 2694490
 # `Build Revision:` of Client.txt, a plain ASCII string in the exe's .rdata.
-build_revision = "328049"
+build_revision = "328873"
 
 # Both depots go into ONE directory, in this order: the later depot overwrites the earlier one
 # ("exe over content"). The launcher passes them to DepotDownloader in a single run, in file
 # order, so the player enters a Steam Guard code once.
 [[depots]]
 id = 2694491
-manifest = "5662192306551403401"
+manifest = "3381779890205441559"
 role = "content"
 
 [[depots]]
 id = 2694492
-manifest = "3411296386151915616"
+manifest = "9024972907680104398"
 role = "windows exe"
 
-# The executable. Every number was measured on the GameFiles copy of the 0.5.5f install
+# The executable. Every number was measured on the GameFiles copy of the 0.5.5g install
 # (manifests from the Steam app manifest of that install), NOT on a depot download made by the
 # launcher: the first real install must confirm them.
 [exe]
 name = "PathOfExileSteam.exe"
 # SHA-256 of the exe as installed by Steam. Leave out or set to "TODO" if unknown: the check
 # is then skipped and says so.
-sha256 = "7e0d36655e6e788202d2d588429c45064bbf87caec95938ebb19a317947c834e"
+sha256 = "37f3268edb05ac56aab0c7ddbbc76fbff2010860e3c8f3b9f875e9a4e86b570f"
 # false: a mismatch is a warning (the value is unconfirmed against the depot). Set true once a
 # real depot install has matched.
 sha256_enforce = false
-size = 78440792
+size = 78442328
 # PE header fields: the build fingerprint the client DLL selects its signature table by.
-pe_timestamp = 0x6aed487d
-image_size = 0x04cba000
+pe_timestamp = 0x6af66fcd
+image_size = 0x04cbb000
 
 # What "verified" means for an install (launcher: src-tauri/src/verify.rs). Sanity floors (the
 # GameFiles copy has 64783 files, 150.8 GB, without logs and hook files) and files that must
@@ -61,11 +62,11 @@ min_bytes = 130000000000
 
 [[verify.files]]
 path = "PathOfExileSteam.exe"
-size = 78440792
+size = 78442328
 
 [[verify.files]]
 path = "Bundles2/_.index.bin"
-size = 116427003
+size = 116439129
 
 [[verify.files]]
 path = "steam_api64.dll"
@@ -81,11 +82,11 @@ size = 466560
 
 # Opcode tables (login.toml, instance.toml, hnc.toml, inventories.tsv, deserializers.tsv).
 [protocol]
-opcodes = "modules/protocol/opcodes/0.5.5f"
+opcodes = "modules/protocol/opcodes/0.5.5g"
 
 # The client DLL's signature table and what `check-build` treats as required.
 [client_hook]
-signatures = "modules/client-hook/signatures/0.5.5f.toml"
+signatures = "modules/client-hook/signatures/0.5.5g.toml"
 # Features (of the signature table) the private server cannot do without: a missing or
 # ambiguous entry of one of them makes `check-build` exit 2. Entries of the other (research)
 # features only make it exit 1.
@@ -96,10 +97,10 @@ required_features = [
 
 # What the server learns about the client. The client sends no version string; the 32-byte
 # `client_hash` of 0x0003/0x0005 is a SHA-256 of the executable file (LoginClientHash_Get32,
-# 0x1420f65d0). Other builds are refused
+# 0x1420f6950). Other builds are refused
 # ([security] allow_unknown_client = false) with BackendErrors `InvalidProtocolVersion`.
 [client]
-hashes = ["7e0d36655e6e788202d2d588429c45064bbf87caec95938ebb19a317947c834e"]
+hashes = ["37f3268edb05ac56aab0c7ddbbc76fbff2010860e3c8f3b9f875e9a4e86b570f"]
 hashes_confirmed = true
 # Strings `check-build` must find in the exe (ASCII or UTF-16LE): command-line options, file
 # names and log lines that tools and the DLL depend on.
