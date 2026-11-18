@@ -24,7 +24,7 @@ use poe2_launcher_lib::{
 use serde_json::json;
 use sha2::{Digest, Sha256};
 
-const GAME: &str = "0.5.5g";
+const GAME: &str = "0.5.5h";
 
 /// The mock GitHub API serves the default owner's repositories.
 const REPO: &str = concat!(poe2_launcher_lib::default_owner!(), "/Poe2Server");
@@ -69,12 +69,12 @@ fn fake_package_with_exe(
         (exe.into(), exe_body.to_vec(), 0o755),
         (
             "config/server.example.toml".into(),
-            b"[game]\nversion = \"0.5.5g\"\n".to_vec(),
+            b"[game]\nversion = \"0.5.5h\"\n".to_vec(),
             0o644,
         ),
         (
             format!("versions/{GAME}.toml"),
-            b"version = \"0.5.5g\"\n".to_vec(),
+            b"version = \"0.5.5h\"\n".to_vec(),
             0o644,
         ),
         (
@@ -83,7 +83,7 @@ fn fake_package_with_exe(
             0o644,
         ),
         (
-            "modules/protocol/opcodes/0.5.5g/a.toml".into(),
+            "modules/protocol/opcodes/0.5.5h/a.toml".into(),
             b"x = 1\n".to_vec(),
             0o644,
         ),

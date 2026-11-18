@@ -18,7 +18,7 @@
 version = "0.5.5h"
 # supported = tested end to end; experimental = signatures resolve, layouts unchecked;
 # legacy = kept for old captures only.
-status = "experimental"
+status = "supported"
 app_id = 2694490
 # `Build Revision:` of Client.txt, a plain ASCII string in the exe's .rdata.
 build_revision = "329201"
@@ -96,11 +96,11 @@ required_features = [
 
 # What the server learns about the client. The client sends no version string; the 32-byte
 # `client_hash` of 0x0003/0x0005 is a SHA-256 of the executable file (LoginClientHash_Get32,
-# 0x1420f6950). Other builds are refused
+# 0x1420f6ba0). Other builds are refused
 # ([security] allow_unknown_client = false) with BackendErrors `InvalidProtocolVersion`.
 [client]
 hashes = ["dfc10ef7e4e4411df7418779c5467d804def225e80814be6ee88f96cbd10dcca"]
-hashes_confirmed = false
+hashes_confirmed = true
 # Strings `check-build` must find in the exe (ASCII or UTF-16LE): command-line options, file
 # names and log lines that tools and the DLL depend on.
 strings = [
